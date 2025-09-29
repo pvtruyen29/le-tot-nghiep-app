@@ -3,24 +3,23 @@ import { useEffect, useState } from "react";
 import Head from 'next/head';
 import { db } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import EventDetailModal from "../components/EventDetailModal";
 import RegistrationModal from "../components/RegistrationModal";
 
 const formatDate = (timestamp) => {
-    if (!timestamp?.toDate) return { day: 'N/A', month: 'N/A', full: 'Chưa có thông tin' };
-    const date = new Date(timestamp.toDate());
-    const day = date.getDate();
-    const month = `Thg ${date.getMonth() + 1}`;
-    const full = date.toLocaleString('vi-VN', { dateStyle: 'full', timeStyle: 'short' });
-    return { day, month, full };
+    if (!timestamp?.toDate) return 'Chưa có thông tin';
+    return new Date(timestamp.toDate()).toLocaleString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
 };
 
 export default function Home() {
     const [events, setEvents] = useState([]);
-    const [featuredEvent, setFeaturedEvent] = useState(null); // State cho sự kiện nổi bật
     const [loading, setLoading] = useState(true);
     const [selectedEvent, setSelectedEvent] = useState(null);
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
     useEffect(() => {
@@ -31,17 +30,12 @@ export default function Home() {
                     id: doc.id,
                     ...doc.data(),
                 }));
-                // Sắp xếp sự kiện theo thời gian tổ chức, sự kiện gần nhất lên đầu
                 eventsData.sort((a, b) => {
                     const timeA = a.eventTime?.toMillis() || Infinity;
                     const timeB = b.eventTime?.toMillis() || Infinity;
                     return timeA - timeB;
                 });
                 setEvents(eventsData);
-                // Lấy sự kiện đầu tiên làm sự kiện nổi bật
-                if (eventsData.length > 0) {
-                    setFeaturedEvent(eventsData[0]);
-                }
             } catch (error) {
                 console.error("Firebase Read Error:", error);
             } finally {
@@ -51,23 +45,12 @@ export default function Home() {
         fetchEvents();
     }, []);
 
-    const handleViewDetailsClick = (event) => {
+    const handleRegisterClick = (event) => {
         setSelectedEvent(event);
-        setIsDetailModalOpen(true);
-    };
-
-    const handleProceedToRegister = () => {
-        setIsDetailModalOpen(false);
         setIsRegisterModalOpen(true);
     };
 
-    const handleBackToDetails = () => {
-        setIsRegisterModalOpen(false);
-        setIsDetailModalOpen(true);
-    };
-
-    const handleCloseAllModals = () => {
-        setIsDetailModalOpen(false);
+    const handleCloseModal = () => {
         setIsRegisterModalOpen(false);
         setSelectedEvent(null);
     };
@@ -82,55 +65,42 @@ export default function Home() {
                 <title>Sự kiện Tốt nghiệp - Đại học Cần Thơ</title>
                 <link rel="icon" href="https://www.ctu.edu.vn/images/branding/logo/favicon.ico" />
             </Head>
-
             <header className="hero-banner">
-                <div className="banner-main">
-                    <img src="https://www.ctu.edu.vn/images/branding/logo/CTU_logo.png" alt="Logo Đại học Cần Thơ" className="hero-logo"/>
-                    <h1>Hệ thống Đăng ký Sự kiện Lễ Tốt nghiệp</h1>
-                </div>
-                {/* === KHU VỰC HIỂN THỊ THÔNG TIN SỰ KIỆN NỔI BẬT === */}
-                {featuredEvent && (
-                    <div className="banner-details">
-                        <h2>Sự kiện sắp diễn ra: {featuredEvent.title}</h2>
-                        <div className="details-grid">
-                            <p><strong>Đơn vị:</strong> {featuredEvent.organizer || 'Chưa cập nhật'}</p>
-                            <p><strong>Địa điểm:</strong> {featuredEvent.location || 'Chưa cập nhật'}</p>
-                            <p><strong>Thời gian:</strong> {formatDate(featuredEvent.eventTime).full}</p>
-                            <p><strong>Hạn ĐK:</strong> {formatDate(featuredEvent.endTime).full}</p>
-                        </div>
-                    </div>
-                )}
+                {/* SỬA LỖI: Trỏ đến file logo trong thư mục /public */}
+                <img 
+                    src="https://www.ctu.edu.vn/images/branding/logo/CTU_logo.png" 
+                    alt="Logo Đại học Cần Thơ" 
+                    className="hero-logo"
+                />
+                <h1>Hệ thống Đăng ký Sự kiện Lễ Tốt nghiệp</h1>
             </header>
-
             <main>
-                <h2 className="section-title">Các sự kiện khác</h2>
-                <div className="event-list">
-                    {events.length > 0 ? events.map((event) => {
-                        const eventDate = formatDate(event.eventTime);
-                        return (
-                            <div key={event.id} className="event-card">
-                                <img src={event.imageUrl} alt={event.title} className="event-card-image" />
-                                <div className="event-card-date">
-                                    <span className="month">{eventDate.month}</span>
-                                    <span className="day">{eventDate.day}</span>
+                <div className="event-grid-detailed">
+                    {events.length > 0 ? events.map((event) => (
+                        <div key={event.id} className="event-card-detailed">
+                            <img src={event.imageUrl} alt={event.title} className="event-card-image" />
+                            <div className="event-info">
+                                <h3>{event.title}</h3>
+                                <div className="info-grid">
+                                    <p className="info-item"><strong>🏢 Đơn vị:</strong> {event.organizer || 'Chưa cập nhật'}</p>
+                                    <p className="info-item"><strong>📍 Địa điểm:</strong> {event.location || 'Chưa cập nhật'}</p>
+                                    <p className="info-item"><strong>🗓️ Thời gian:</strong> {formatDate(event.eventTime)}</p>
+                                    <p className="info-item"><strong>🕔 Bắt đầu ĐK:</strong> {formatDate(event.startTime)}</p>
+                                    <p className="info-item"><strong>🕔 Hạn chót ĐK:</strong> {formatDate(event.endTime)}</p>
+                                    <p className="info-item"><strong>📊 Số lượng:</strong> {event.registeredCount || 0} / {event.eligibleCount || 'N/A'}</p>
                                 </div>
-                                <div className="event-info">
-                                    <h3>{event.title}</h3>
-                                    <p className="location">{event.location || 'Chưa cập nhật địa điểm'}</p>
-                                    <button className="register-btn" onClick={() => handleViewDetailsClick(event)}>
-                                        Xem chi tiết & Đăng ký
-                                    </button>
-                                </div>
+                                {event.notes && <p className="info-item notes"><strong>📝 Ghi chú:</strong> {event.notes}</p>}
+                                <button className="register-btn" onClick={() => handleRegisterClick(event)}>
+                                    Đăng ký ngay
+                                </button>
                             </div>
-                        );
-                    }) : (
+                        </div>
+                    )) : (
                         <p style={{ textAlign: 'center' }}>Hiện tại chưa có sự kiện nào được công bố.</p>
                     )}
                 </div>
             </main>
-            
-            {isDetailModalOpen && <EventDetailModal event={selectedEvent} onClose={handleCloseAllModals} onProceedToRegister={handleProceedToRegister}/>}
-            {isRegisterModalOpen && <RegistrationModal event={selectedEvent} onClose={handleCloseAllModals} onBack={handleBackToDetails}/>}
+            {isRegisterModalOpen && <RegistrationModal event={selectedEvent} onClose={handleCloseModal} />}
         </div>
     );
 }

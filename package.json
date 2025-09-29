@@ -12,6 +12,7 @@
     "firebase": "^12.3.0",
     "firebase-admin": "^13.5.0",
     "formidable": "^3.5.4",
+    "jszip": "^3.10.1",
     "next": "15.5.4",
     "papaparse": "^5.5.3",
     "react": "19.1.0",

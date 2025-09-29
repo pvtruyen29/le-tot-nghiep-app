@@ -1,0 +1,526 @@
+/* src/styles/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&display=swap');
+
+:root {
+  --primary-color: #005a9e;
+  --secondary-color: #f4f6f8;
+  --text-color: #34495e;
+  --heading-color: #2c3e50;
+  --border-radius: 12px;
+  --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  font-family: 'Public Sans', sans-serif;
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* --- KHU VỰC BANNER TRANG CHỦ --- */
+.hero-banner {
+  background: white;
+  padding: 2rem 2.5rem;
+  margin-bottom: 3rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  text-align: center; /* Để logo và tiêu đề ra giữa */
+}
+
+/* CHỈNH SỬA KÍCH THƯỚC LOGO TẠI ĐÂY */
+.hero-logo {
+  height: 200px; /* Chiều cao nhỏ hơn */
+  width: auto;
+  margin-bottom: 0.8rem; /* Giảm khoảng cách dưới logo */
+}
+
+.hero-banner h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+/* --- GIAO DIỆN DANH SÁCH SỰ KIỆN CHI TIẾT --- */
+.event-grid-detailed {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+}
+
+.event-card-detailed {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  display: flex;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.event-card-detailed:hover {
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+}
+.event-card-detailed .event-card-image {
+  width: 300px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.event-card-detailed .event-info {
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.event-card-detailed h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+
+.event-card-detailed .info-item {
+  margin: 0.4rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.event-card-detailed .info-item strong {
+  color: var(--heading-color);
+}
+
+.event-card-detailed .notes {
+  font-style: italic;
+  color: #555;
+  margin-top: 1rem;
+}
+.event-card-detailed .register-btn {
+  margin-top: auto; /* Đẩy nút xuống dưới cùng */
+  align-self: flex-end; /* Căn nút sang phải */
+  width: auto;
+  padding: 10px 30px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: background-color 0.2s;
+}
+.event-card-detailed .register-btn:hover {
+  background-color: #00457c;
+}
+
+/* --- GIAO DIỆN MODAL CHUNG --- */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  width: 90%;
+  max-width: 600px;
+  position: relative;
+  max-height: 90vh; /* Giới hạn chiều cao */
+  overflow-y: auto; /* Cho phép cuộn nếu nội dung quá dài */
+}
+
+.modal-title {
+  color: var(--primary-color);
+  font-size: 1.8rem;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.form-box {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background-color: #fcfcfc;
+}
+
+.box-title {
+    color: var(--heading-color);
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 500;
+  color: var(--heading-color);
+  font-size: 1rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="datetime-local"],
+.form-group textarea {
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: 'Public Sans', sans-serif;
+}
+
+.form-group input[type="file"] {
+  padding: 8px 0;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.message {
+  padding: 1rem;
+  background-color: #ffe0b2;
+  border: 1px solid #ff9800;
+  color: #e65100;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.modal-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: background-color 0.2s;
+}
+
+.modal-actions button[type="submit"] {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.modal-actions button[type="submit"]:hover:not(:disabled) {
+  background-color: #00457c;
+}
+
+.modal-actions .btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.modal-actions .btn-secondary:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.modal-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001; /* Đảm bảo nó nằm trên modal content */
+  border-radius: var(--border-radius);
+}
+
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid var(--primary-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .hero-banner {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .hero-banner h1 {
+    font-size: 1.5rem;
+  }
+
+  .event-card-detailed {
+    flex-direction: column; /* Xếp ảnh và thông tin theo chiều dọc trên mobile */
+  }
+
+  .event-card-detailed .event-card-image {
+    width: 100%;
+    height: 200px; /* Điều chỉnh chiều cao ảnh trên mobile */
+    max-height: unset;
+  }
+
+  .event-card-detailed .event-info {
+    padding: 1.2rem;
+  }
+
+  .event-card-detailed h3 {
+    font-size: 1.3rem;
+  }
+
+  .event-card-detailed .register-btn {
+    align-self: stretch; /* Nút chiếm toàn bộ chiều rộng */
+    margin-left: 0;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+  }
+}
+/* src/styles/globals.css */
+
+/* ... Dán đoạn này vào cuối file ... */
+
+.crop-container {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ReactCrop__image {
+  max-height: 400px;
+}
+
+.btn-crop {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-top: 1rem;
+}
+
+.preview-container {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.preview-container p {
+  font-weight: 500;
+}
+
+.preview-container img {
+  max-width: 150px;
+  border-radius: 8px;
+  border: 2px solid #eee;
+}
+/* src/styles/globals.css */
+
+/* ... Dán đoạn này vào cuối file ... */
+
+/* --- CSS cho Bố cục 2 cột trong Modal --- */
+
+.modal-large {
+  max-width: 900px; /* Tăng chiều rộng tối đa của modal */
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Chia thành 2 cột bằng nhau */
+  gap: 2.5rem; /* Khoảng cách giữa 2 cột */
+}
+
+.modal-col-info .modal-title {
+  text-align: left; /* Căn lề trái cho tiêu đề ở cột thông tin */
+  font-size: 1.8rem;
+}
+
+.modal-col-action .form-box {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+}
+
+/* SỬA LỖI: Giới hạn khung xem trước */
+.preview-frame {
+  width: 150px;
+  height: 150px;
+  border: 2px dashed #ccc;
+  padding: 5px;
+  margin: 0.5rem auto 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.preview-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Responsive cho màn hình nhỏ */
+@media (max-width: 800px) {
+  .modal-grid {
+    grid-template-columns: 1fr; /* Chuyển về 1 cột trên mobile */
+    gap: 1.5rem;
+  }
+  .modal-col-info .modal-title {
+    text-align: center; /* Căn giữa lại trên mobile */
+  }
+}
+/* src/styles/globals.css */
+
+/* ... Dán đoạn này vào cuối file ... */
+
+/* --- CSS cho Bố cục 2 cột trong Modal --- */
+
+.modal-large {
+  max-width: 950px; /* Tăng chiều rộng tối đa của modal */
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 400px 1fr; /* Cột trái cố định, cột phải co giãn */
+  gap: 2.5rem;
+}
+
+.modal-col-info .modal-title {
+  text-align: left;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.modal-col-info .info-box, .modal-col-info .form-box {
+  margin-top: 0;
+  padding: 1.5rem;
+}
+
+.modal-col-action {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f9fafb;
+  border-radius: var(--border-radius);
+  padding: 1rem;
+}
+
+.placeholder-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 400px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  color: #aaa;
+  font-size: 1.2rem;
+}
+
+.modal-col-action .crop-container,
+.modal-col-action .preview-container {
+  width: 100%;
+}
+
+.modal-col-action .crop-container label {
+  display: block;
+  text-align: center;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.preview-frame {
+  width: 210px; /* 210px x 280px là tỷ lệ 3x4 */
+  height: 280px;
+  border: 2px dashed #ccc;
+  padding: 5px;
+  margin: 0.5rem auto 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.message-right {
+  width: 100%;
+  box-sizing: border-box; /* Đảm bảo padding không làm vỡ layout */
+}
+
+/* Responsive cho màn hình nhỏ */
+@media (max-width: 900px) {
+  .modal-grid {
+    grid-template-columns: 1fr; /* Chuyển về 1 cột trên mobile */
+    gap: 1.5rem;
+  }
+  .modal-col-info .modal-title {
+    text-align: center;
+  }
+  .modal-col-action {
+    min-height: 300px; /* Chiều cao tối thiểu cho khung ảnh trên mobile */
+  }
+}
+/* SỬA LỖI: CSS cho layout 2 cột */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Chia thành 2 cột */
+  gap: 0.5rem 2rem; /* Khoảng cách dòng và cột */
+}

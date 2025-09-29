@@ -1,0 +1,294 @@
+// src/components/AdminDashboard.js
+import { useState, useEffect } from 'react';
+import { db, storage } from '../lib/firebase';
+import { collection, addDoc, getDocs, Timestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import Papa from 'papaparse';
+import EditEventModal from './EditEventModal'; // Import component mới
+
+export default function AdminDashboard() {
+    // === CÁC BIẾN TRẠNG THÁI (STATE) ===
+    const [events, setEvents] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    
+    // State cho form thêm sự kiện
+    const [title, setTitle] = useState('');
+    const [organizer, setOrganizer] = useState('');
+    const [location, setLocation] = useState('');
+    const [eventTime, setEventTime] = useState('');
+    const [startTime, setStartTime] = useState('');
+    const [endTime, setEndTime] = useState('');
+    const [notes, setNotes] = useState('');
+    const [imageFile, setImageFile] = useState(null);
+
+    // State cho modal sửa sự kiện
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingEvent, setEditingEvent] = useState(null);
+
+    // State cho khu vực quản lý
+    const [selectedEventId, setSelectedEventId] = useState('');
+    const [registrations, setRegistrations] = useState([]);
+    const [csvFile, setCsvFile] = useState(null);
+
+    // === CÁC HÀM TƯƠNG TÁC VỚI DATABASE (EFFECTS) ===
+
+    // 1. Tải danh sách tất cả sự kiện khi component được render
+    const fetchEvents = async () => {
+        setIsLoading(true);
+        try {
+            const querySnapshot = await getDocs(collection(db, "events"));
+            const eventsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            eventsData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+            setEvents(eventsData);
+            if (eventsData.length > 0 && !selectedEventId) {
+                setSelectedEventId(eventsData[0].id);
+            } else if (eventsData.length === 0) {
+                setSelectedEventId('');
+            }
+        } catch (error) {
+            setMessage("Lỗi: Không thể tải danh sách sự kiện.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchEvents();
+    }, []);
+
+    // 2. Tự động tải danh sách đăng ký mỗi khi người dùng chọn một sự kiện khác
+    useEffect(() => {
+        if (!selectedEventId) {
+            setRegistrations([]);
+            return;
+        }
+        const fetchRegistrations = async () => {
+            setIsLoading(true);
+            try {
+                const res = await fetch(`/api/registrations?eventId=${selectedEventId}`);
+                if (!res.ok) throw new Error('Phản hồi từ server không hợp lệ');
+                const data = await res.json();
+                setRegistrations(data);
+            } catch (error) {
+                console.error("Lỗi tải danh sách đăng ký:", error);
+                setRegistrations([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchRegistrations();
+    }, [selectedEventId]);
+
+
+    // === CÁC HÀM XỬ LÝ SỰ KIỆN CỦA NGƯỜI DÙNG (HANDLERS) ===
+
+    const handleAddEvent = async (e) => {
+        e.preventDefault();
+        if (!title || !imageFile) return alert('Vui lòng điền tên sự kiện và chọn ảnh.');
+        setIsLoading(true);
+        setMessage('');
+        try {
+            const imageRef = ref(storage, `event_images/${imageFile.name}_${Date.now()}`);
+            const snapshot = await uploadBytes(imageRef, imageFile);
+            const imageUrl = await getDownloadURL(snapshot.ref);
+
+            await addDoc(collection(db, 'events'), {
+                title, organizer, location, notes, imageUrl,
+                eventTime: eventTime ? Timestamp.fromDate(new Date(eventTime)) : null,
+                startTime: startTime ? Timestamp.fromDate(new Date(startTime)) : null,
+                endTime: endTime ? Timestamp.fromDate(new Date(endTime)) : null,
+                createdAt: Timestamp.now(),
+            });
+
+            setMessage('Thêm sự kiện thành công!');
+            e.target.reset(); // Xóa form
+            fetchEvents();
+        } catch (error) {
+            setMessage('Lỗi: Không thể thêm sự kiện.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteEvent = async (eventId, eventTitle) => {
+        if (window.confirm(`Bạn có chắc chắn muốn xóa sự kiện "${eventTitle}" không?`)) {
+            setIsLoading(true);
+            setMessage('');
+            try {
+                const res = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                setMessage('Xóa sự kiện thành công!');
+                // Cập nhật giao diện ngay lập tức
+                setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+                if (selectedEventId === eventId) setSelectedEventId(events.length > 1 ? events[1].id : '');
+            } catch (error) {
+                setMessage(`Lỗi: ${error.message}`);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    };
+    
+    const handleOpenEditModal = (event) => {
+        setEditingEvent(event);
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveChanges = async (eventId, updatedData) => {
+        setIsLoading(true);
+        setMessage('');
+        try {
+            const res = await fetch(`/api/events/${eventId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedData)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            setMessage('Cập nhật sự kiện thành công!');
+            setIsEditModalOpen(false);
+            setEditingEvent(null);
+            fetchEvents();
+        } catch (error) {
+            setMessage(`Lỗi: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleUploadStudents = async (e) => {
+        e.preventDefault();
+        if (!selectedEventId || !csvFile) return alert('Vui lòng chọn sự kiện và file CSV.');
+        setIsLoading(true);
+        setMessage('');
+        const formData = new FormData();
+        formData.append('eventId', selectedEventId);
+        formData.append('csvFile', csvFile);
+        try {
+            const response = await fetch('/api/upload-students', { method: 'POST', body: formData });
+            const data = await response.json();
+            setMessage(data.message);
+            if (!response.ok) throw new Error(data.message);
+        } catch (error) {
+            setMessage(`Lỗi: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDownloadCsv = () => {
+        if (registrations.length === 0) return alert("Không có dữ liệu để tải.");
+        const csv = Papa.unparse(registrations);
+        const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `danh_sach_dang_ky_${selectedEventId}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleDownloadPhotos = () => {
+        if (registrations.length === 0) return alert("Không có ảnh để tải.");
+        window.open(`/api/registrations?eventId=${selectedEventId}&action=download_zip`, '_blank');
+    };
+
+    // === GIAO DIỆN (RENDER) ===
+    return (
+        <div style={{ maxWidth: '1200px', margin: 'auto', padding: '2rem' }}>
+            <h1>Bảng điều khiển Admin</h1>
+            {message && <p style={{ fontWeight: 'bold', background: '#e0f7fa', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>{message}</p>}
+
+            <details style={{ border: '1px solid #ccc', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem' }}>Thêm sự kiện mới</summary>
+                <form onSubmit={handleAddEvent} style={{ marginTop: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                        <input type="text" placeholder="Tên sự kiện (*)" onChange={(e) => setTitle(e.target.value)} required />
+                        <input type="text" placeholder="Đơn vị tổ chức" onChange={(e) => setOrganizer(e.target.value)} />
+                        <input type="text" placeholder="Nơi tổ chức" onChange={(e) => setLocation(e.target.value)} />
+                        <div><label>Thời gian tổ chức:</label><input type="datetime-local" onChange={(e) => setEventTime(e.target.value)} /></div>
+                        <div><label>Bắt đầu đăng ký:</label><input type="datetime-local" onChange={(e) => setStartTime(e.target.value)} /></div>
+                        <div><label>Hạn chót đăng ký:</label><input type="datetime-local" onChange={(e) => setEndTime(e.target.value)} /></div>
+                    </div>
+                    <textarea placeholder="Ghi chú, lưu ý..." onChange={(e) => setNotes(e.target.value)} style={{ width: 'calc(100% - 16px)', marginTop: '1rem', minHeight: '80px', padding: '8px' }}></textarea>
+                    <div style={{ marginTop: '1rem' }}>
+                        <label>Ảnh minh họa (*): </label>
+                        <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} required />
+                        <button type="submit" disabled={isLoading} style={{ float: 'right', padding: '10px 20px' }}>{isLoading ? 'Đang xử lý...' : 'Thêm sự kiện'}</button>
+                    </div>
+                </form>
+            </details>
+
+            <div style={{ border: '1px solid #0070f3', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+                <h2>Quản lý Sự kiện & Dữ liệu Sinh viên</h2>
+                <div style={{ marginBottom: '1rem' }}>
+                    <label><strong>Chọn sự kiện để quản lý:</strong></label><br/>
+                    <select value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)} required style={{ width: '100%', padding: '8px', marginTop: '0.5rem' }}>
+                      {events.map(event => (<option key={event.id} value={event.id}>{event.title}</option>))}
+                    </select>
+                </div>
+                <button onClick={() => handleOpenEditModal(events.find(e => e.id === selectedEventId))} disabled={!selectedEventId}>Sửa sự kiện đang chọn</button>
+                <button onClick={() => handleDeleteEvent(selectedEventId, events.find(e => e.id === selectedEventId)?.title)} disabled={isLoading || !selectedEventId} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '10px', marginLeft: '1rem' }}>Xóa sự kiện đang chọn</button>
+                <form onSubmit={handleUploadStudents} style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                    <label>Tải lên DS sinh viên đủ điều kiện cho sự kiện đang chọn:</label><br/>
+                    <input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files[0])} required style={{marginTop: '0.5rem'}} />
+                    <button type="submit" disabled={isLoading || !selectedEventId} style={{ marginLeft: '1rem' }}>Tải lên</button>
+                </form>
+            </div>
+
+            <div>
+                <h2>Danh sách Sinh viên đã Đăng ký ({registrations.length})</h2>
+                <div style={{ marginBottom: '1rem' }}>
+                    <button onClick={handleDownloadCsv} disabled={registrations.length === 0}>Tải về danh sách (Excel/CSV)</button>
+                    <button onClick={handleDownloadPhotos} disabled={registrations.length === 0} style={{ marginLeft: '1rem' }}>Tải về tất cả ảnh (ZIP)</button>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9em' }}>
+                        <thead>
+                            <tr style={{ background: '#f0f0f0' }}>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>MSSV</th>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Họ Tên</th>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Lớp</th>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Ngành</th>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Email</th>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Điểm TB</th>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Xếp Loại</th>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Ảnh</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {isLoading ? (
+                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '1rem' }}>Đang tải...</td></tr>
+                            ) : registrations.length > 0 ? (
+                                registrations.map(reg => (
+                                    <tr key={reg.mssv}>
+                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.mssv}</td>
+                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.hoTen}</td>
+                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.lop}</td>
+                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.nganh}</td>
+                                        <td style={{ padding: '8px', border: '1-px solid #ddd' }}>{reg.email}</td>
+                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.diemTB}</td>
+                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.xepLoai}</td>
+                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}><a href={reg.photoURL} target="_blank" rel="noopener noreferrer">Xem ảnh</a></td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '1rem' }}>Chưa có sinh viên nào đăng ký cho sự kiện này.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {isEditModalOpen && (
+                <EditEventModal 
+                    event={editingEvent}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onSave={handleSaveChanges}
+                />
+            )}
+        </div>
+    );
+}

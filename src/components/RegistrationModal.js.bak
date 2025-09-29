@@ -1,0 +1,86 @@
+// src/components/RegistrationModal.js
+import { useState } from 'react';
+
+export default function RegistrationModal({ event, onClose }) {
+  const [mssv, setMssv] = useState("");
+  const [file, setFile] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!mssv || !file) {
+      setMessage("Vui lòng nhập đầy đủ MSSV và chọn ảnh.");
+      return;
+    }
+    setIsLoading(true);
+    setMessage("");
+
+    const formData = new FormData();
+    formData.append("mssv", mssv);
+    formData.append("photo", file);
+    formData.append("eventId", event.id);
+
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      setMessage(data.message); 
+      if (response.ok) {
+        setTimeout(onClose, 3000); 
+      }
+    } catch (error) {
+      setMessage("Lỗi hệ thống, vui lòng thử lại sau.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        {isLoading && <div className="loading-overlay"><div className="loader"></div></div>}
+        
+        <h2 className="modal-title">Đăng ký tham dự: {event.title}</h2>
+        
+        <div className="form-box">
+            <h3 className="box-title">Vui lòng điền thông tin</h3>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="mssv">Mã số sinh viên của bạn:</label>
+                <input 
+                  type="text" 
+                  id="mssv" 
+                  value={mssv} 
+                  onChange={(e) => setMssv(e.target.value.toUpperCase())}
+                  placeholder="Ví dụ: B1234567"
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="photo">Ảnh chân dung (tên file phải là MSSV.jpg/png):</label>
+                <input 
+                  type="file" 
+                  id="photo" 
+                  accept="image/png, image/jpeg" 
+                  onChange={(e) => setFile(e.target.files[0])} 
+                  required 
+                />
+              </div>
+
+              {message && <p className="message">{message}</p>}
+
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={onClose} disabled={isLoading}>Đóng</button>
+                <button type="submit" className="register-btn" disabled={isLoading}>
+                  {isLoading ? 'Đang xử lý...' : 'Xác nhận Đăng ký'}
+                </button>
+              </div>
+            </form>
+        </div>
+      </div>
+    </div>
+  );
+}

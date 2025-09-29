@@ -1,0 +1,29 @@
+{
+  "name": "le-tot-nghiep-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@google-cloud/vision": "^5.3.3",
+    "firebase": "^12.3.0",
+    "firebase-admin": "^13.5.0",
+    "formidable": "^3.5.4",
+    "next": "15.5.4",
+    "papaparse": "^5.5.3",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-image-crop": "^11.0.10"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,12 +1,11 @@
 // src/pages/index.js
 import { useEffect, useState } from "react";
 import Head from 'next/head';
-// Bỏ import Image từ next/image để tránh lỗi
+import Image from 'next/image';
 import { db } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import RegistrationModal from "../components/RegistrationModal";
 
-// Nâng cấp: Hàm này giờ sẽ tách riêng ngày và tháng
 const formatDate = (timestamp) => {
     if (!timestamp?.toDate) {
         return { day: '?', month: 'N/A', full: 'Chưa có thông tin' };
@@ -70,7 +69,6 @@ export default function Home() {
                 <link rel="icon" href="/favicon.ico" />
             </Head>
             <header className="hero-banner">
-                {/* Sử dụng thẻ <img> đơn giản và ổn định */}
                 <img 
                     src="/CTU_Logo.png" 
                     alt="Logo Đại học Cần Thơ" 
@@ -78,6 +76,19 @@ export default function Home() {
                 />
                 <h1>Hệ thống Đăng ký Sự kiện Lễ Tốt nghiệp</h1>
             </header>
+
+            {/* === THÊM MỚI: Nút xem lịch tổng quan === */}
+            <div className="schedule-link-container">
+                <a 
+                    href="/lich-tot-nghiep-toan-truong.png" // <-- THAY THẾ BẰNG ĐƯỜNG DẪN HÌNH ẢNH CỦA BẠN
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="schedule-link-button"
+                >
+                    📅 Xem Lịch tổ chức Lễ tốt nghiệp (Toàn trường)
+                </a>
+            </div>
+
             <main>
                 <div className="event-grid-detailed">
                     {events.length > 0 ? events.map((event) => {
@@ -86,7 +97,6 @@ export default function Home() {
                             <div key={event.id} className="event-card-detailed">
                                 <div className="event-card-image-wrapper">
                                     <img src={event.imageUrl} alt={event.title} className="event-card-image" />
-                                    {/* Khối hiển thị ngày/tháng dạng tờ lịch */}
                                     <div className="event-card-date">
                                         <span className="month">{eventDate.month}</span>
                                         <span className="day">{eventDate.day}</span>

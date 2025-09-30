@@ -1,78 +1,104 @@
 // src/pages/api/register.js
 import { IncomingForm } from 'formidable';
-import { ImageAnnotatorClient } from '@google-cloud/vision';
-import { db, bucket, serviceAccount } from '../../lib/firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore'; // Import FieldValue
+import { storage, db } from '../../lib/firebase-admin';
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "./auth/[...nextauth]"
 
-const visionClient = new ImageAnnotatorClient({
-  credentials: {
-    client_email: serviceAccount.client_email,
-    private_key: serviceAccount.private_key,
-  },
-  projectId: serviceAccount.project_id,
-});
-
-export const config = { api: { bodyParser: false } };
+export const config = {
+    api: {
+        bodyParser: false,
+    },
+};
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
-
-  try {
-    const data = await new Promise((resolve, reject) => {
-      const form = new IncomingForm();
-      form.parse(req, (err, fields, files) => {
-        if (err) return reject(err);
-        resolve({ fields, files });
-      });
-    });
-
-    const mssv = data.fields.mssv[0].trim();
-    const photo = data.files.photo[0];
-    const eventId = data.fields.eventId[0];
-    const fileName = photo.originalFilename;
-    const fileNameWithoutExt = fileName.split('.').slice(0, -1).join('.');
-
-    if (fileNameWithoutExt !== mssv) {
-      return res.status(400).json({ message: `Tên file ảnh phải là MSSV của bạn (${mssv}).` });
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    const eligibleStudentRef = db.collection('events').doc(eventId).collection('eligibleStudents').doc(mssv);
-    const doc = await eligibleStudentRef.get();
-    if (!doc.exists) {
-      return res.status(403).json({ message: 'MSSV của bạn không có trong danh sách tốt nghiệp.' });
+    console.log("API /api/register: Bắt đầu xử lý yêu cầu đăng ký.");
+
+    // --- BƯỚC 1: KIỂM TRA PHIÊN ĐĂNG NHẬP ---
+    const session = await getServerSession(req, res, authOptions);
+
+    if (!session || !session.user || !session.user.email) {
+        console.error("API Error: Không tìm thấy session hoặc email người dùng.");
+        return res.status(401).json({ message: 'Chưa xác thực. Vui lòng đăng nhập lại.' });
     }
-    const studentInfo = doc.data();
+    const loggedInEmail = session.user.email;
+    console.log(`API Log: Người dùng đã đăng nhập với email: ${loggedInEmail}`);
 
-    const [result] = await visionClient.faceDetection(photo.filepath);
-    const faces = result.faceAnnotations;
-    if (faces.length === 0) return res.status(400).json({ message: 'Ảnh không hợp lệ: Không tìm thấy khuôn mặt.' });
-    if (faces.length > 1) return res.status(400).json({ message: 'Ảnh không hợp lệ: Chỉ được đăng ảnh một người.' });
+    const form = new IncomingForm();
+    form.parse(req, async (err, fields, files) => {
+        if (err) {
+            console.error("API Error: Lỗi khi parse form data:", err);
+            return res.status(500).json({ message: 'Lỗi khi xử lý form.' });
+        }
 
-    const destination = `portraits/${fileName}`;
-    await bucket.upload(photo.filepath, { destination });
-    const fileUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
-    
-    const eventRef = db.collection('events').doc(eventId);
-    const registrationRef = db.collection('registrations').doc(`${eventId}_${mssv}`);
+        const mssv = fields.mssv?.[0]; // formidable v3 trả về mảng
+        const eventId = fields.eventId?.[0];
+        const photo = files.photo?.[0];
 
-    // Sử dụng Transaction để đảm bảo tính toàn vẹn dữ liệu
-    await db.runTransaction(async (transaction) => {
-        // 1. Tạo lượt đăng ký mới
-        transaction.set(registrationRef, {
-            mssv, eventId, photoURL: fileUrl, registeredAt: new Date(),
-            ...studentInfo,
-        });
+        if (!mssv || !eventId || !photo) {
+            console.error("API Error: Thiếu thông tin đầu vào.", { mssv, eventId, photo: !!photo });
+            return res.status(400).json({ message: 'Thiếu thông tin cần thiết.' });
+        }
+        console.log(`API Log: Đang xử lý đăng ký cho MSSV: ${mssv}, EventID: ${eventId}`);
 
-        // 2. Cập nhật số đếm đăng ký (tăng lên 1)
-        transaction.update(eventRef, { 
-            registeredCount: FieldValue.increment(1) 
-        });
+        try {
+            // --- BƯỚC 2: KIỂM TRA SINH VIÊN VÀ SO KHỚP EMAIL ---
+            console.log("API Log: Bắt đầu kiểm tra sinh viên đủ điều kiện...");
+            const eligibleStudentRef = db.collection('eligibleStudents').doc(`${eventId}_${mssv}`);
+            const studentDoc = await eligibleStudentRef.get();
+
+            if (!studentDoc.exists) {
+                console.error(`API Error: MSSV ${mssv} không có trong danh sách đủ điều kiện.`);
+                return res.status(404).json({ message: 'MSSV không có trong danh sách đủ điều kiện tham dự sự kiện này.' });
+            }
+
+            const studentData = studentDoc.data();
+            console.log(`API Log: Đã tìm thấy sinh viên. Email trong danh sách: ${studentData.email}`);
+            
+            if (studentData.email !== loggedInEmail) {
+                console.error(`API Error: Email không khớp! Yêu cầu: ${loggedInEmail}, CSDL: ${studentData.email}`);
+                return res.status(403).json({ message: `Bạn không có quyền đăng ký cho MSSV này. Vui lòng đăng nhập đúng tài khoản email (${studentData.email}) đã được cung cấp.` });
+            }
+            console.log("API Log: Email hợp lệ.");
+
+            // --- BƯỚC 3: KIỂM TRA XEM ĐÃ ĐĂNG KÝ CHƯA ---
+            const registrationRef = db.collection('registrations').doc(`${eventId}_${mssv}`);
+            const registrationDoc = await registrationRef.get();
+            if (registrationDoc.exists) {
+                console.error(`API Error: MSSV ${mssv} đã đăng ký rồi.`);
+                return res.status(409).json({ message: 'Bạn đã đăng ký tham dự sự kiện này rồi.' });
+            }
+
+            // --- BƯỚC 4: TẢI ẢNH LÊN ---
+            console.log("API Log: Bắt đầu tải ảnh lên Cloud Storage...");
+            const bucket = storage.bucket();
+            const destination = `registrations/${eventId}/${mssv}.jpg`;
+            await bucket.upload(photo.filepath, { destination });
+            const photoURL = `https://storage.googleapis.com/${bucket.name}/${destination}`;
+            console.log(`API Log: Tải ảnh thành công. URL: ${photoURL}`);
+
+            // --- BƯỚC 5: LƯU THÔNG TIN ĐĂNG KÝ ---
+            const registrationData = { ...studentData, eventId, photoURL, registeredAt: new Date() };
+            await registrationRef.set(registrationData);
+            console.log("API Log: Đã lưu thông tin đăng ký vào Firestore.");
+
+            // --- BƯỚC 6: CẬP NHẬT SỐ LƯỢNG ---
+            const eventRef = db.collection('events').doc(eventId);
+            const eventDoc = await eventRef.get();
+            if (eventDoc.exists) {
+                const currentCount = eventDoc.data().registeredCount || 0;
+                await eventRef.update({ registeredCount: currentCount + 1 });
+                console.log("API Log: Đã cập nhật số lượng đăng ký cho sự kiện.");
+            }
+
+            res.status(200).json({ message: 'Đăng ký thành công! Vui lòng kiểm tra email để biết thêm chi tiết.' });
+
+        } catch (error) {
+            console.error('API CRITICAL ERROR:', error);
+            res.status(500).json({ message: 'Lỗi nghiêm trọng từ server, vui lòng xem logs.' });
+        }
     });
-
-    return res.status(200).json({ message: 'Đăng ký thành công! Chúc mừng bạn.' });
-
-  } catch (error) {
-    console.error('Lỗi khi đăng ký:', error.message);
-    return res.status(500).json({ message: 'Lỗi từ máy chủ.' });
-  }
 }

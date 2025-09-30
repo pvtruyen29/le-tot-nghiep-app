@@ -1,12 +1,11 @@
 // src/pages/index.js
 import { useEffect, useState } from "react";
 import Head from 'next/head';
-// Không cần import useSession hay signIn ở đây nữa
+import { useSession, signIn, signOut } from "next-auth/react";
 import { db } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import RegistrationModal from "../components/RegistrationModal";
 
-// Hàm helper để định dạng ngày tháng
 const formatDate = (timestamp) => {
     if (!timestamp?.toDate) {
         return { day: '?', month: 'N/A', full: 'Chưa có thông tin' };
@@ -21,6 +20,7 @@ const formatDate = (timestamp) => {
 };
 
 export default function Home() {
+    const { data: session, status } = useSession();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedEvent, setSelectedEvent] = useState(null);
@@ -30,15 +30,8 @@ export default function Home() {
         const fetchEvents = async () => {
             try {
                 const querySnapshot = await getDocs(collection(db, "events"));
-                let eventsData = querySnapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-                eventsData.sort((a, b) => {
-                    const timeA = a.eventTime?.toMillis() || Infinity;
-                    const timeB = b.eventTime?.toMillis() || Infinity;
-                    return timeA - timeB;
-                });
+                let eventsData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                eventsData.sort((a, b) => (a.eventTime?.toMillis() || Infinity) - (b.eventTime?.toMillis() || Infinity));
                 setEvents(eventsData);
             } catch (error) {
                 console.error("Firebase Read Error:", error);
@@ -49,8 +42,12 @@ export default function Home() {
         fetchEvents();
     }, []);
 
-    // Logic xử lý nút "Đăng ký ngay" được đơn giản hóa
     const handleRegisterClick = (event) => {
+        if (status !== "authenticated") {
+            alert("Vui lòng đăng nhập bằng email sinh viên để thực hiện đăng ký.");
+            signIn('google');
+            return;
+        }
         setSelectedEvent(event);
         setIsRegisterModalOpen(true);
     };
@@ -60,8 +57,8 @@ export default function Home() {
         setSelectedEvent(null);
     };
 
-    if (loading) {
-        return <div style={{ textAlign: 'center', paddingTop: '5rem', fontSize: '1.5rem' }}>Đang tải danh sách sự kiện...</div>;
+    if (loading && status === 'loading') {
+        return <div style={{ textAlign: 'center', paddingTop: '5rem', fontSize: '1.5rem' }}>Đang tải...</div>;
     }
 
     return (
@@ -71,28 +68,36 @@ export default function Home() {
                 <link rel="icon" href="/favicon.ico" />
             </Head>
             <header className="hero-banner">
-                <img 
-                    src="/CTU_Logo.png" 
-                    alt="Logo Đại học Cần Thơ" 
-                    className="hero-logo"
-                />
+                <img src="/CTU_Logo.png" alt="Logo Đại học Cần Thơ" className="hero-logo" />
                 <h1>Hệ thống Đăng ký Sự kiện Lễ Tốt nghiệp</h1>
+                
+                <div className="login-status">
+                    {status === "loading" && <p>Đang tải...</p>}
+                    {status === "unauthenticated" && (
+                        <button className="login-btn" onClick={() => signIn('google')}>
+                            Đăng nhập với Email Sinh viên
+                        </button>
+                    )}
+                    {status === "authenticated" && (
+                        <div>
+                            <p>Xin chào, {session.user.name}</p>
+                            <button className="logout-btn" onClick={() => signOut()}>
+                                Đăng xuất
+                            </button>
+                        </div>
+                    )}
+                </div>
             </header>
 
             <div className="schedule-link-container">
-                <a 
-                    href="/lich-tot-nghiep-toan-truong.png"
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="schedule-link-button"
-                >
+                <a href="/lich-tot-nghiep-toan-truong.png" target="_blank" rel="noopener noreferrer" className="schedule-link-button">
                     📅 Xem Lịch tổ chức Lễ tốt nghiệp (Toàn trường)
                 </a>
             </div>
 
             <main>
                 <div className="event-grid-detailed">
-                    {events.length > 0 ? events.map((event) => {
+                    {events.map((event) => {
                         const eventDate = formatDate(event.eventTime);
                         return (
                             <div key={event.id} className="event-card-detailed">
@@ -120,9 +125,7 @@ export default function Home() {
                                 </div>
                             </div>
                         )
-                    }) : (
-                        <p style={{ textAlign: 'center' }}>Hiện tại chưa có sự kiện nào được công bố.</p>
-                    )}
+                    })}
                 </div>
             </main>
             {isRegisterModalOpen && <RegistrationModal event={selectedEvent} onClose={handleCloseModal} />}

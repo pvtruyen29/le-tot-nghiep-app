@@ -6,6 +6,6 @@ export default function MyApp({ Component, pageProps: { session, ...pageProps } 
   return (
     <SessionProvider session={session}>
       <Component {...pageProps} />
-    </SessionProvider> // <-- SỬA LỖI Ở ĐÂY
+    </SessionProvider>
   );
 }

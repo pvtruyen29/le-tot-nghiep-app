@@ -1,11 +1,12 @@
 // src/pages/index.js
 import { useEffect, useState } from "react";
 import Head from 'next/head';
-import Image from 'next/image';
+// Không cần import useSession hay signIn ở đây nữa
 import { db } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import RegistrationModal from "../components/RegistrationModal";
 
+// Hàm helper để định dạng ngày tháng
 const formatDate = (timestamp) => {
     if (!timestamp?.toDate) {
         return { day: '?', month: 'N/A', full: 'Chưa có thông tin' };
@@ -48,6 +49,7 @@ export default function Home() {
         fetchEvents();
     }, []);
 
+    // Logic xử lý nút "Đăng ký ngay" được đơn giản hóa
     const handleRegisterClick = (event) => {
         setSelectedEvent(event);
         setIsRegisterModalOpen(true);
@@ -77,10 +79,9 @@ export default function Home() {
                 <h1>Hệ thống Đăng ký Sự kiện Lễ Tốt nghiệp</h1>
             </header>
 
-            {/* === THÊM MỚI: Nút xem lịch tổng quan === */}
             <div className="schedule-link-container">
                 <a 
-                    href="/lich-tot-nghiep-toan-truong.png" // <-- THAY THẾ BẰNG ĐƯỜNG DẪN HÌNH ẢNH CỦA BẠN
+                    href="/lich-tot-nghiep-toan-truong.png"
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="schedule-link-button"

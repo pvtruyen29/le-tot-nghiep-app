@@ -16,20 +16,16 @@ export default async function handler(req, res) {
     }
 
     console.log("--- BẮT ĐẦU YÊU CẦU ĐĂNG KÝ MỚI ---");
-
     const session = await getServerSession(req, res, authOptions);
 
     if (!session || !session.user || !session.user.email) {
-        console.error("LỖI: Không có session đăng nhập.");
         return res.status(401).json({ message: 'Chưa xác thực. Vui lòng đăng nhập lại.' });
     }
     const loggedInEmail = session.user.email;
-    console.log(`LOG: Email đã đăng nhập: ${loggedInEmail}`);
 
     const form = new IncomingForm();
     form.parse(req, async (err, fields, files) => {
         if (err) {
-            console.error("LỖI: Không thể xử lý form data:", err);
             return res.status(500).json({ message: 'Lỗi khi xử lý form.' });
         }
 
@@ -38,41 +34,38 @@ export default async function handler(req, res) {
         const photo = files.photo?.[0];
 
         if (!rawMssv || !eventId || !photo) {
-            console.error("LỖI: Thiếu thông tin đầu vào.", { mssv: rawMssv, eventId, photo: !!photo });
             return res.status(400).json({ message: 'Thiếu thông tin cần thiết.' });
         }
 
-        // Chuẩn hóa MSSV nhập vào: Xóa khoảng trắng và chuyển thành IN HOA
         const mssv = rawMssv.trim().toUpperCase();
-        console.log(`LOG: MSSV gốc từ form: "${rawMssv}", MSSV đã chuẩn hóa: "${mssv}"`);
         
         try {
-            // --- SỬA LỖI: KIỂM TRA EMAIL VÀ MSSV (KHÔNG PHÂN BIỆT HOA/THƯỜNG) ---
-            // 1. Lấy phần tên người dùng từ email
             const usernameFromEmail = loggedInEmail.split('@')[0];
-            // 2. So sánh sau khi đã chuyển cả hai thành IN HOA
             if (!usernameFromEmail.toUpperCase().includes(mssv)) {
-                 console.error(`LỖI: Email không khớp MSSV. Tên người dùng trong email (IN HOA): ${usernameFromEmail.toUpperCase()}, MSSV (IN HOA): ${mssv}`);
                  return res.status(403).json({ message: `Email bạn đang dùng (${loggedInEmail}) không khớp với MSSV (${mssv}) mà bạn muốn đăng ký.` });
             }
 
-            // --- KIỂM TRA SINH VIÊN TRONG DANH SÁCH ---
-            // Sử dụng MSSV đã được chuẩn hóa (IN HOA) để tìm kiếm
-            const docIdToFind = `${eventId}_${mssv}`;
-            console.log(`LOG: Đang tìm kiếm document trong Firestore với ID: "${docIdToFind}"`);
+            // --- SỬA LỖI: THAY THẾ BẰNG PHƯƠNG PHÁP QUERY ---
+            console.log(`LOG: Đang truy vấn sinh viên có eventId="${eventId}" và mssv="${mssv}"`);
+            
+            const eligibleStudentsRef = db.collection('eligibleStudents');
+            const snapshot = await eligibleStudentsRef
+                .where('eventId', '==', eventId)
+                .where('mssv', '==', mssv)
+                .limit(1)
+                .get();
 
-            const eligibleStudentRef = db.collection('eligibleStudents').doc(docIdToFind);
-            const studentDoc = await eligibleStudentRef.get();
-
-            if (!studentDoc.exists) {
-                console.error(`LỖI: Không tìm thấy document với ID: "${docIdToFind}". Vui lòng kiểm tra lại xem MSSV trong file CSV đã được viết IN HOA chưa.`);
+            if (snapshot.empty) {
+                console.error(`LỖI: Không tìm thấy sinh viên nào khớp với eventId="${eventId}" và mssv="${mssv}"`);
                 return res.status(404).json({ message: 'MSSV không có trong danh sách đủ điều kiện tham dự sự kiện này.' });
             }
-            
-            console.log("LOG: Đã tìm thấy sinh viên trong danh sách đủ điều kiện.");
-            const studentData = studentDoc.data();
 
-            const registrationRef = db.collection('registrations').doc(docIdToFind);
+            console.log("LOG: Đã tìm thấy sinh viên trong danh sách đủ điều kiện.");
+            const studentDoc = snapshot.docs[0];
+            const studentData = studentDoc.data();
+            
+            // Dùng Document ID thật từ kết quả tìm được để kiểm tra đăng ký
+            const registrationRef = db.collection('registrations').doc(studentDoc.id);
             const registrationDoc = await registrationRef.get();
             if (registrationDoc.exists) {
                 return res.status(409).json({ message: 'Bạn đã đăng ký tham dự sự kiện này rồi.' });
@@ -84,6 +77,7 @@ export default async function handler(req, res) {
             const photoURL = `https://storage.googleapis.com/${bucket.name}/${destination}`;
 
             const registrationData = { ...studentData, eventId, photoURL, registeredAt: new Date() };
+            // Lưu đăng ký với ID chính xác đã tìm được
             await registrationRef.set(registrationData);
 
             const eventRef = db.collection('events').doc(eventId);

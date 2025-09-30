@@ -42,21 +42,22 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Thiếu thông tin cần thiết.' });
         }
 
-        // --- SỬA LỖI: Chuẩn hóa MSSV ---
-        // 1. Xóa tất cả khoảng trắng thừa ở đầu và cuối
-        // 2. Chuyển tất cả thành CHỮ IN HOA
+        // Chuẩn hóa MSSV nhập vào: Xóa khoảng trắng và chuyển thành IN HOA
         const mssv = rawMssv.trim().toUpperCase();
-        console.log(`LOG: MSSV gốc: "${rawMssv}", MSSV đã chuẩn hóa: "${mssv}"`);
+        console.log(`LOG: MSSV gốc từ form: "${rawMssv}", MSSV đã chuẩn hóa: "${mssv}"`);
         
         try {
-            // --- KIỂM TRA MSSV CÓ TRÙNG VỚI EMAIL KHÔNG ---
-            const mssvFromEmail = loggedInEmail.split('@')[0].toLowerCase();
-            if (!mssvFromEmail.includes(mssv.toLowerCase())) {
-                console.error(`LỖI: Email không khớp MSSV. Email: ${loggedInEmail}, MSSV: ${mssv}`);
-                return res.status(403).json({ message: `Email bạn đang dùng (${loggedInEmail}) không khớp với MSSV (${mssv}) mà bạn muốn đăng ký.` });
+            // --- SỬA LỖI: KIỂM TRA EMAIL VÀ MSSV (KHÔNG PHÂN BIỆT HOA/THƯỜNG) ---
+            // 1. Lấy phần tên người dùng từ email
+            const usernameFromEmail = loggedInEmail.split('@')[0];
+            // 2. So sánh sau khi đã chuyển cả hai thành IN HOA
+            if (!usernameFromEmail.toUpperCase().includes(mssv)) {
+                 console.error(`LỖI: Email không khớp MSSV. Tên người dùng trong email (IN HOA): ${usernameFromEmail.toUpperCase()}, MSSV (IN HOA): ${mssv}`);
+                 return res.status(403).json({ message: `Email bạn đang dùng (${loggedInEmail}) không khớp với MSSV (${mssv}) mà bạn muốn đăng ký.` });
             }
 
             // --- KIỂM TRA SINH VIÊN TRONG DANH SÁCH ---
+            // Sử dụng MSSV đã được chuẩn hóa (IN HOA) để tìm kiếm
             const docIdToFind = `${eventId}_${mssv}`;
             console.log(`LOG: Đang tìm kiếm document trong Firestore với ID: "${docIdToFind}"`);
 
@@ -64,14 +65,13 @@ export default async function handler(req, res) {
             const studentDoc = await eligibleStudentRef.get();
 
             if (!studentDoc.exists) {
-                console.error(`LỖI: Không tìm thấy document với ID: "${docIdToFind}"`);
+                console.error(`LỖI: Không tìm thấy document với ID: "${docIdToFind}". Vui lòng kiểm tra lại xem MSSV trong file CSV đã được viết IN HOA chưa.`);
                 return res.status(404).json({ message: 'MSSV không có trong danh sách đủ điều kiện tham dự sự kiện này.' });
             }
             
             console.log("LOG: Đã tìm thấy sinh viên trong danh sách đủ điều kiện.");
             const studentData = studentDoc.data();
 
-            // ... các bước còn lại giữ nguyên ...
             const registrationRef = db.collection('registrations').doc(docIdToFind);
             const registrationDoc = await registrationRef.get();
             if (registrationDoc.exists) {

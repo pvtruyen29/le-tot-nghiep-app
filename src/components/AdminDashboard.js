@@ -3,16 +3,14 @@ import { useState, useEffect } from 'react';
 import { db, storage } from '../lib/firebase';
 import { collection, addDoc, getDocs, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import Papa from 'papaparse';
-import EditEventModal from './EditEventModal'; // Import component Sửa Sự kiện
+import EditEventModal from './EditEventModal';
+import Barcode from './Barcode';
 
 export default function AdminDashboard() {
-    // === CÁC BIẾN TRẠNG THÁI (STATE) ===
     const [events, setEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     
-    // State cho form thêm sự kiện
     const [title, setTitle] = useState('');
     const [organizer, setOrganizer] = useState('');
     const [location, setLocation] = useState('');
@@ -22,19 +20,16 @@ export default function AdminDashboard() {
     const [notes, setNotes] = useState('');
     const [imageFile, setImageFile] = useState(null);
 
-    // State cho modal sửa sự kiện
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState(null);
 
-    // State cho khu vực quản lý
     const [selectedEventId, setSelectedEventId] = useState('');
-    const [registrations, setRegistrations] = useState([]); // SV đã đăng ký
-    const [eligibleStudents, setEligibleStudents] = useState([]); // SV đủ điều kiện
+    const [registrations, setRegistrations] = useState([]);
+    const [eligibleStudents, setEligibleStudents] = useState([]);
     
     const [csvFile, setCsvFile] = useState(null);
-    const [newStudent, setNewStudent] = useState({ mssv: '', hoTen: '' }); // Form thêm SV mới
+    const [newStudent, setNewStudent] = useState({ mssv: '', hoTen: '' });
 
-    // === CÁC HÀM TẢI DỮ LIỆU ===
     const fetchEvents = async () => {
         setIsLoading(true);
         try {
@@ -58,7 +53,6 @@ export default function AdminDashboard() {
         fetchEvents();
     }, []);
     
-    // Tải cả 2 danh sách khi chọn sự kiện
     useEffect(() => {
         if (!selectedEventId) {
             setRegistrations([]);
@@ -68,11 +62,9 @@ export default function AdminDashboard() {
         const fetchAllData = async () => {
             setIsLoading(true);
             try {
-                // Tải DS đã đăng ký
                 const regRes = await fetch(`/api/registrations?eventId=${selectedEventId}`);
                 const regData = await regRes.json();
                 setRegistrations(regData);
-                // Tải DS đủ điều kiện
                 const eligibleRes = await fetch(`/api/events/${selectedEventId}/students`);
                 const eligibleData = await eligibleRes.json();
                 setEligibleStudents(eligibleData);
@@ -86,7 +78,6 @@ export default function AdminDashboard() {
         fetchAllData();
     }, [selectedEventId]);
 
-    // === CÁC HÀM XỬ LÝ SỰ KIỆN ===
     const handleAddEvent = async (e) => {
         e.preventDefault();
         if (!title || !imageFile) return alert('Vui lòng điền tên sự kiện và chọn ảnh.');
@@ -102,7 +93,7 @@ export default function AdminDashboard() {
                 startTime: startTime ? Timestamp.fromDate(new Date(startTime)) : null,
                 endTime: endTime ? Timestamp.fromDate(new Date(endTime)) : null,
                 createdAt: Timestamp.now(),
-		eligibleCount: 0,
+                eligibleCount: 0,
                 registeredCount: 0,
             });
             setMessage('Thêm sự kiện thành công!');
@@ -177,7 +168,6 @@ export default function AdminDashboard() {
             const data = await response.json();
             setMessage(data.message);
             if (!response.ok) throw new Error(data.message);
-            // Tải lại danh sách sinh viên đủ điều kiện
             const res = await fetch(`/api/events/${selectedEventId}/students`);
             setEligibleStudents(await res.json());
         } catch (error) {
@@ -226,16 +216,36 @@ export default function AdminDashboard() {
         }
     };
     
-    const handleDownloadCsv = () => {
+    const handleDownloadExcel = async () => {
         if (registrations.length === 0) return alert("Không có dữ liệu để tải.");
-        const csv = Papa.unparse(registrations);
-        const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `danh_sach_dang_ky_${selectedEventId}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        setIsLoading(true);
+        setMessage('Đang tạo file Excel, vui lòng chờ...');
+        try {
+            const res = await fetch(`/api/export-excel?eventId=${selectedEventId}`);
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Không thể tạo file Excel từ server.');
+            }
+
+            const blob = await res.blob();
+            
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `danh_sach_dang_ky_${selectedEventId}.xlsx`;
+            document.body.appendChild(a);
+a.click();
+            window.URL.revokeObjectURL(url);
+            setMessage('Tạo file Excel thành công!');
+
+        } catch (error) {
+            console.error(error);
+            setMessage(`Lỗi: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleDownloadPhotos = () => {
@@ -311,8 +321,12 @@ export default function AdminDashboard() {
             <div>
                 <h2>Danh sách Sinh viên đã Đăng ký ({registrations.length})</h2>
                 <div style={{ marginBottom: '1rem' }}>
-                    <button onClick={handleDownloadCsv} disabled={registrations.length === 0}>Tải về danh sách (Excel/CSV)</button>
-                    <button onClick={handleDownloadPhotos} disabled={registrations.length === 0} style={{ marginLeft: '1rem' }}>Tải về tất cả ảnh (ZIP)</button>
+                    <button onClick={handleDownloadExcel} disabled={registrations.length === 0 || isLoading}>
+                        {isLoading ? 'Đang tạo file...' : 'Tải về danh sách (Excel & Barcode)'}
+                    </button>
+                    <button onClick={handleDownloadPhotos} disabled={registrations.length === 0} style={{ marginLeft: '1rem' }}>
+                        Tải về tất cả ảnh (ZIP)
+                    </button>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9em' }}>
@@ -322,15 +336,14 @@ export default function AdminDashboard() {
                                 <th style={{ padding: '8px', border: '1px solid #ddd' }}>Họ Tên</th>
                                 <th style={{ padding: '8px', border: '1px solid #ddd' }}>Lớp</th>
                                 <th style={{ padding: '8px', border: '1px solid #ddd' }}>Ngành</th>
-                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Email</th>
-                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Điểm TB</th>
                                 <th style={{ padding: '8px', border: '1px solid #ddd' }}>Xếp Loại</th>
                                 <th style={{ padding: '8px', border: '1px solid #ddd' }}>Ảnh</th>
+                                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Barcode</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {isLoading ? (
-                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '1rem' }}>Đang tải...</td></tr>
+                            {isLoading && registrations.length === 0 ? (
+                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '1rem' }}>Đang tải...</td></tr>
                             ) : registrations.length > 0 ? (
                                 registrations.map(reg => (
                                     <tr key={reg.mssv}>
@@ -338,14 +351,15 @@ export default function AdminDashboard() {
                                         <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.hoTen}</td>
                                         <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.lop}</td>
                                         <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.nganh}</td>
-                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.email}</td>
-                                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.diemTB}</td>
                                         <td style={{ padding: '8px', border: '1px solid #ddd' }}>{reg.xepLoai}</td>
                                         <td style={{ padding: '8px', border: '1px solid #ddd' }}><a href={reg.photoURL} target="_blank" rel="noopener noreferrer">Xem ảnh</a></td>
+                                        <td style={{ padding: '8px', border: '1px solid #ddd', minWidth: '200px' }}>
+                                            <Barcode value={reg.mssv} width={2} height={50} />
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '1rem' }}>Chưa có sinh viên nào đăng ký cho sự kiện này.</td></tr>
+                                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '1rem' }}>Chưa có sinh viên nào đăng ký cho sự kiện này.</td></tr>
                             )}
                         </tbody>
                     </table>

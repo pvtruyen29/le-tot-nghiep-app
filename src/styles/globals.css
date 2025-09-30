@@ -474,3 +474,123 @@ html, body {
     font-size: 1.5rem;
   }
 }
+/* CSS cho khối đăng nhập */
+.login-status {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+}
+.login-status p {
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+}
+.login-btn, .logout-btn {
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.login-btn {
+  background-color: #4285F4;
+  color: white;
+}
+.logout-btn {
+  background-color: #db4437;
+  color: white;
+}
+/* ... Dán vào cuối file globals.css ... */
+
+.login-prompt {
+  text-align: center;
+  padding: 2rem;
+}
+
+.login-prompt p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.login-btn-large {
+  display: inline-block;
+  padding: 12px 30px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background-color: #4285F4;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.login-btn-large:hover {
+  background-color: #357ae8;
+}
+/* ... Dán vào cuối file globals.css ... *
+}
+
+/* Bỏ grid layout */
+.modal-grid {
+  display: block;
+}
+
+/* Nút Cắt ảnh nổi bật */
+.btn-crop-main {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background-color: #ffc107; /* Màu vàng */
+  color: #212529; /* Màu chữ đen */
+  transition: background-color 0.2s;
+}
+
+.btn-crop-main:hover {
+  background-color: #ffb300;
+}
+
+/* Tinh chỉnh lại nút xác nhận cuối cùng */
+/* ... Dán vào cuối file globals.css ... */
+
+/* --- CSS CHO POPUP ĐĂNG KÝ (GIAO DIỆN MỚI) --- */
+.modal-single-col {
+  max-width: 650px; /* Làm cho popup hẹp hơn */
+  padding: 2rem 2.5rem;
+}
+
+/* Bỏ grid layout */
+.modal-grid {
+  display: block;
+}
+
+/* Nút Cắt ảnh nổi bật */
+.btn-crop-main {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background-color: #ffc107; /* Màu vàng */
+  color: #212529; /* Màu chữ đen */
+  transition: background-color 0.2s;
+}
+
+.btn-crop-main:hover {
+  background-color: #ffb300;
+}
+
+/* Tinh chỉnh lại nút xác nhận cuối cùng */
+.modal-actions .register-btn {
+  font-weight: 700;
+}

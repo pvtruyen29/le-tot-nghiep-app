@@ -1,8 +1,11 @@
 // src/components/RegistrationModal.js
 import { useState, useRef } from 'react';
+// Đã loại bỏ hoàn toàn các import liên quan đến next-auth
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
-// Hàm helper để tạo ảnh đã được cắt (giữ nguyên)
+// --- CÁC HÀM PHỤ TRỢ ---
+
 function getCroppedImg(image, crop, fileName) {
   const canvas = document.createElement('canvas');
   const scaleX = image.naturalWidth / image.width;
@@ -23,8 +26,7 @@ function getCroppedImg(image, crop, fileName) {
     crop.y * scaleY,
     crop.width * scaleX,
     crop.height * scaleY,
-    0,
-    0,
+    0, 0,
     crop.width,
     crop.height
   );
@@ -45,16 +47,17 @@ const formatDate = (timestamp) => {
     });
 };
 
+
+// --- COMPONENT CHÍNH ---
+
 export default function RegistrationModal({ event, onClose }) {
   const [mssv, setMssv] = useState("");
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef(null);
-  
   const [crop, setCrop] = useState();
   const [completedCrop, setCompletedCrop] = useState(null);
   const [croppedFileUrl, setCroppedFileUrl] = useState('');
   let finalCroppedFile = null;
-
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -71,10 +74,8 @@ export default function RegistrationModal({ event, onClose }) {
   const onImageLoad = (e) => {
     imgRef.current = e.currentTarget;
     const { width, height } = e.currentTarget;
-    // Tỷ lệ 3/4
-    const aspect = 3 / 4; 
     const newCrop = centerCrop(
-      makeAspectCrop({ unit: '%', width: 90 }, aspect, width, height),
+      makeAspectCrop({ unit: '%', width: 90 }, 3 / 4, width, height),
       width,
       height
     );
@@ -94,9 +95,9 @@ export default function RegistrationModal({ event, onClose }) {
     const croppedImageFile = await getCroppedImg(imgRef.current, completedCrop, fileName);
     
     finalCroppedFile = croppedImageFile;
-    if (croppedFileUrl) { URL.revokeObjectURL(croppedFileUrl); } // Giải phóng bộ nhớ
+    if (croppedFileUrl) { URL.revokeObjectURL(croppedFileUrl); }
     setCroppedFileUrl(URL.createObjectURL(croppedImageFile));
-    setMessage('Đã cắt ảnh thành công!');
+    setMessage('Đã cắt ảnh thành công! Bạn có thể nhấn Xác nhận.');
   }
 
   const handleSubmit = async (e) => {
@@ -132,20 +133,25 @@ export default function RegistrationModal({ event, onClose }) {
         {isLoading && <div className="loading-overlay"><div className="loader"></div></div>}
         
         <div className="modal-grid">
-            {/* === CỘT TRÁI: THÔNG TIN VÀ THAO TÁC === */}
             <div className="modal-col-info">
                 <h2 className="modal-title">{event.title}</h2>
                 <div className="info-box">
-                    <h3 className="box-title">Thông tin sự kiện</h3>
+                    <h3 className="box-title">Thông tin chi tiết</h3>
                     <div className="event-details">
                         <p><strong>Đơn vị:</strong> {event.organizer || 'Chưa cập nhật'}</p>
                         <p><strong>Địa điểm:</strong> {event.location || 'Chưa cập nhật'}</p>
                         <p><strong>Thời gian:</strong> {formatDate(event.eventTime)}</p>
                         <p><strong>Hạn ĐK:</strong> {formatDate(event.endTime)}</p>
+                        {event.notes && <p className="notes"><strong>Lưu ý:</strong> {event.notes}</p>}
                     </div>
                 </div>
+            </div>
+
+            <div className="modal-col-action">
                 <form onSubmit={handleSubmit} className="form-box">
                     <h3 className="box-title">Form Đăng ký</h3>
+                    <p style={{textAlign: 'center', marginTop: '-1rem', marginBottom: '1.5rem'}}>Vui lòng điền thông tin đăng ký:</p>
+                    
                     <div className="form-group">
                         <label htmlFor="mssv">1. Nhập Mã số sinh viên:</label>
                         <input type="text" id="mssv" value={mssv} onChange={(e) => setMssv(e.target.value.toUpperCase())} placeholder="Ví dụ: B1234567" required />
@@ -154,6 +160,40 @@ export default function RegistrationModal({ event, onClose }) {
                         <label htmlFor="photo">2. Chọn ảnh chân dung:</label>
                         <input type="file" id="photo" accept="image/*" onChange={onSelectFile} />
                     </div>
+
+                    <div className="photo-guidelines">
+                        <p><strong>Lưu ý quan trọng:</strong> Bạn PHẢI chọn và cắt ảnh trước khi xác nhận.</p>
+                        <ul>
+                            <li><strong>Bố cục:</strong> Ảnh rõ nét, chụp từ ngang eo đến đỉnh đầu.</li>
+                            <li><strong>Thần thái:</strong> Tư thế đứng đẹp, lịch sự, cười tươi, tự tin.</li>
+                            <li><strong>Trang phục:</strong> Khuyến khích mặc lễ phục tốt nghiệp của Trường, hoặc áo sơ mi/vest (đối với nam) và áo dài (đối với nữ).</li>
+                            <li><strong>Phông nền (Background):</strong> Nên chọn nền đơn giản (tường trắng, xám) hoặc ảnh xóa phông để dễ xử lý kỹ thuật.</li>
+                        </ul>
+                    </div>
+
+                    {imgSrc && (
+                        <div className="crop-container">
+                            <label>3. Điều chỉnh và cắt ảnh (tỷ lệ 3x4):</label>
+                            <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
+                                <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
+                            </ReactCrop>
+                            <button type="button" className="btn-crop" onClick={handleCreateCroppedFile}>
+                                Cắt ảnh
+                            </button>
+                        </div>
+                    )}
+                    
+                    {croppedFileUrl && (
+                        <div className="preview-container">
+                            <p>Xem trước ảnh đã cắt:</p>
+                            <div className="preview-frame" style={{ aspectRatio: '3 / 4' }}>
+                                <img src={croppedFileUrl} alt="Ảnh đã cắt" />
+                            </div>
+                        </div>
+                    )}
+                    
+                    {message && <p className="message message-right">{message}</p>}
+
                     <div className="modal-actions">
                         <button type="button" className="btn-secondary" onClick={onClose} disabled={isLoading}>Đóng</button>
                         <button type="submit" className="register-btn" disabled={isLoading || !croppedFileUrl}>
@@ -161,34 +201,6 @@ export default function RegistrationModal({ event, onClose }) {
                         </button>
                     </div>
                 </form>
-            </div>
-
-            {/* === CỘT PHẢI: HIỂN THỊ HÌNH ẢNH === */}
-            <div className="modal-col-action">
-                {imgSrc ? (
-                    <div className="crop-container">
-                        <label>3. Điều chỉnh và cắt ảnh (tỷ lệ 3x4):</label>
-                        <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
-                            <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
-                        </ReactCrop>
-                        <button type="button" className="btn-crop" onClick={handleCreateCroppedFile}>
-                            Cắt ảnh
-                        </button>
-                    </div>
-                ) : (
-                    <div className="placeholder-image">Vui lòng chọn ảnh để bắt đầu</div>
-                )}
-                
-                {croppedFileUrl && (
-                    <div className="preview-container">
-                        <p>Xem trước ảnh đã cắt:</p>
-                        <div className="preview-frame" style={{ aspectRatio: '3 / 4' }}>
-                            <img src={croppedFileUrl} alt="Ảnh đã cắt" />
-                        </div>
-                    </div>
-                )}
-                
-                {message && <p className="message message-right">{message}</p>}
             </div>
         </div>
       </div>

@@ -15,21 +15,17 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    console.log("API /api/register: Bắt đầu xử lý yêu cầu.");
-
+    // --- BƯỚC 1: KIỂM TRA PHIÊN ĐĂNG NHẬP CỦA NGƯỜI DÙNG ---
     const session = await getServerSession(req, res, authOptions);
 
     if (!session || !session.user || !session.user.email) {
-        console.error("API Error: Không tìm thấy session hoặc email người dùng.");
         return res.status(401).json({ message: 'Chưa xác thực. Vui lòng đăng nhập lại.' });
     }
     const loggedInEmail = session.user.email;
-    console.log(`API Log: Người dùng đã đăng nhập với email: ${loggedInEmail}`);
 
     const form = new IncomingForm();
     form.parse(req, async (err, fields, files) => {
         if (err) {
-            console.error("API Error: Lỗi khi parse form data:", err);
             return res.status(500).json({ message: 'Lỗi khi xử lý form.' });
         }
 
@@ -38,61 +34,62 @@ export default async function handler(req, res) {
         const photo = files.photo?.[0];
 
         if (!mssv || !eventId || !photo) {
-            console.error("API Error: Thiếu thông tin đầu vào.", { mssv, eventId, photo: !!photo });
             return res.status(400).json({ message: 'Thiếu thông tin cần thiết.' });
         }
-        console.log(`API Log: Đang xử lý đăng ký cho MSSV: ${mssv}, EventID: ${eventId}`);
 
         try {
-            console.log("API Log: Bắt đầu kiểm tra sinh viên đủ điều kiện...");
+            // --- BƯỚC 2: KIỂM TRA MSSV CÓ TRÙNG VỚI EMAIL ĐÃ ĐĂNG NHẬP KHÔNG ---
+            const mssvFromEmail = loggedInEmail.split('@')[0].toLowerCase();
+            if (!mssvFromEmail.includes(mssv.toLowerCase())) {
+                 return res.status(403).json({ message: `Email bạn đang dùng (${loggedInEmail}) không khớp với MSSV (${mssv}) mà bạn muốn đăng ký.` });
+            }
+
+
+            // --- BƯỚC 3: KIỂM TRA SINH VIÊN TRONG DANH SÁCH ĐỦ ĐIỀU KIỆN ---
             const eligibleStudentRef = db.collection('eligibleStudents').doc(`${eventId}_${mssv}`);
             const studentDoc = await eligibleStudentRef.get();
 
             if (!studentDoc.exists) {
-                console.error(`API Error: MSSV ${mssv} không có trong danh sách đủ điều kiện.`);
-                return res.status(404).json({ message: 'MSSV không có trong danh sách đủ điều kiện.' });
+                return res.status(404).json({ message: 'MSSV không có trong danh sách đủ điều kiện tham dự sự kiện này.' });
             }
-
-            const studentData = studentDoc.data();
-            console.log(`API Log: Đã tìm thấy sinh viên. Email trong CSDL: ${studentData.email}`);
             
-            if (studentData.email !== loggedInEmail) {
-                console.error(`API Error: Email không khớp! Yêu cầu: ${loggedInEmail}, CSDL: ${studentData.email}`);
-                return res.status(403).json({ message: `Bạn không có quyền đăng ký cho MSSV này.` });
-            }
-            console.log("API Log: Email hợp lệ.");
+            // Lấy dữ liệu sinh viên để dùng sau này
+            const studentData = studentDoc.data();
 
+            // --- BƯỚC 4: KIỂM TRA XEM SINH VIÊN ĐÃ ĐĂNG KÝ CHƯA ---
             const registrationRef = db.collection('registrations').doc(`${eventId}_${mssv}`);
             const registrationDoc = await registrationRef.get();
             if (registrationDoc.exists) {
-                console.error(`API Error: MSSV ${mssv} đã đăng ký rồi.`);
-                return res.status(409).json({ message: 'Bạn đã đăng ký sự kiện này rồi.' });
+                return res.status(409).json({ message: 'Bạn đã đăng ký tham dự sự kiện này rồi.' });
             }
 
-            console.log("API Log: Bắt đầu tải ảnh lên Cloud Storage...");
+            // --- BƯỚC 5: TẢI ẢNH LÊN VÀ LƯU THÔNG TIN ĐĂNG KÝ ---
             const bucket = storage.bucket();
             const destination = `registrations/${eventId}/${mssv}.jpg`;
             await bucket.upload(photo.filepath, { destination });
             const photoURL = `https://storage.googleapis.com/${bucket.name}/${destination}`;
-            console.log(`API Log: Tải ảnh thành công. URL: ${photoURL}`);
 
-            const registrationData = { ...studentData, eventId, photoURL, registeredAt: new Date() };
+            const registrationData = {
+                ...studentData, // Lấy thông tin từ danh sách đủ điều kiện
+                eventId,
+                photoURL,
+                registeredAt: new Date(),
+            };
             await registrationRef.set(registrationData);
-            console.log("API Log: Đã lưu thông tin đăng ký vào Firestore.");
 
+            // --- BƯỚC 6: CẬP NHẬT SỐ LƯỢNG ĐÃ ĐĂNG KÝ ---
             const eventRef = db.collection('events').doc(eventId);
             const eventDoc = await eventRef.get();
             if (eventDoc.exists) {
                 const currentCount = eventDoc.data().registeredCount || 0;
                 await eventRef.update({ registeredCount: currentCount + 1 });
-                console.log("API Log: Đã cập nhật số lượng đăng ký cho sự kiện.");
             }
 
-            res.status(200).json({ message: 'Đăng ký thành công!' });
+            res.status(200).json({ message: 'Đăng ký thành công! Vui lòng kiểm tra email để biết thêm chi tiết.' });
 
         } catch (error) {
-            console.error('API CRITICAL ERROR:', error);
-            res.status(500).json({ message: 'Lỗi nghiêm trọng từ server, vui lòng xem logs.' });
+            console.error('Registration API error:', error);
+            res.status(500).json({ message: 'Lỗi từ server, vui lòng thử lại.' });
         }
     });
 }

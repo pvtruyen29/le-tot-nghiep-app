@@ -14,21 +14,17 @@ export const authOptions = {
     async signIn({ account, profile }) {
       // Kiểm tra nếu đăng nhập bằng Google và có email
       if (account.provider === "google" && profile.email) {
-        
-        // --- LOGIC MỞ RỘNG ---
-        // Lấy phần tên miền từ email (ví dụ: "student.ctu.edu.vn")
-        const emailDomain = profile.email.split('@')[1];
-
-        // Cho phép đăng nhập nếu tên miền là "ctu.edu.vn" hoặc kết thúc bằng ".ctu.edu.vn"
-        if (emailDomain === "ctu.edu.vn" || emailDomain.endsWith(".ctu.edu.vn")) {
+        // Chỉ cho phép nếu email kết thúc bằng @student.ctu.edu.vn
+        if (profile.email.endsWith("@student.ctu.edu.vn")) {
           return true; // Cho phép đăng nhập
         } else {
-          // Nếu không phải email của CTU, chuyển hướng về trang lỗi
-          return '/auth-error?error=InvalidDomain';
+          // Nếu không đúng đuôi email, chặn đăng nhập
+          // Bạn có thể chuyển hướng về trang lỗi
+          // return '/unauthorized' 
+          return false; // Chặn đăng nhập
         }
       }
-      // Chặn các trường hợp khác
-      return false;
+      return false; // Chặn các trường hợp khác
     },
   },
 };

@@ -3,8 +3,39 @@ import { useState, useRef } from 'react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-// --- CÁC HÀM PHỤ TRỢ ---
-function getCroppedImg(image, crop, fileName) { /* ... Giữ nguyên ... */ }
+// --- HÀM PHỤ TRỢ ---
+function getCroppedImg(image, crop, fileName) {
+  const canvas = document.createElement('canvas');
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+  canvas.width = crop.width;
+  canvas.height = crop.height;
+  const ctx = canvas.getContext('2d');
+
+  const pixelRatio = window.devicePixelRatio;
+  canvas.width = crop.width * pixelRatio;
+  canvas.height = crop.height * pixelRatio;
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  ctx.imageSmoothingQuality = 'high';
+
+  ctx.drawImage(
+    image,
+    crop.x * scaleX,
+    crop.y * scaleY,
+    crop.width * scaleX,
+    crop.height * scaleY,
+    0, 0,
+    crop.width,
+    crop.height
+  );
+
+  return new Promise((resolve) => {
+    canvas.toBlob(blob => {
+      if (!blob) { console.error('Canvas is empty'); return; }
+      resolve(new File([blob], fileName, { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.95);
+  });
+}
 
 // --- COMPONENT CHÍNH ---
 export default function RegistrationModal({ event, onClose }) {
@@ -18,10 +49,71 @@ export default function RegistrationModal({ event, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const onSelectFile = (e) => { /* ... Giữ nguyên ... */ };
-  const onImageLoad = (e) => { /* ... Giữ nguyên ... */ };
-  const handleCreateCroppedFile = async () => { /* ... Giữ nguyên ... */ };
-  const handleSubmit = async (e) => { /* ... Giữ nguyên ... */ };
+  const onSelectFile = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setCrop(undefined);
+      setCroppedFileUrl('');
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const onImageLoad = (e) => {
+    imgRef.current = e.currentTarget;
+    const { width, height } = e.currentTarget;
+    const newCrop = centerCrop(
+      makeAspectCrop({ unit: '%', width: 90 }, 3 / 4, width, height),
+      width,
+      height
+    );
+    setCrop(newCrop);
+  };
+
+  const handleCreateCroppedFile = async () => {
+    if (!mssv.trim()) {
+        setMessage('Vui lòng nhập MSSV trước khi cắt ảnh.');
+        return;
+    }
+    if (!completedCrop || !imgRef.current) {
+        setMessage('Vui lòng chọn vùng ảnh hợp lệ.');
+        return;
+    }
+    const fileName = `${mssv.trim()}.jpg`;
+    const croppedImageFile = await getCroppedImg(imgRef.current, completedCrop, fileName);
+    
+    finalCroppedFile = croppedImageFile;
+    if (croppedFileUrl) { URL.revokeObjectURL(croppedFileUrl); }
+    setCroppedFileUrl(URL.createObjectURL(croppedImageFile));
+    setMessage('Đã cắt ảnh thành công! Bạn có thể nhấn Xác nhận.');
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!mssv || !croppedFileUrl) {
+        setMessage("Vui lòng nhập MSSV, chọn và cắt ảnh trước khi đăng ký.");
+        return;
+    }
+    setIsLoading(true);
+    setMessage("");
+
+    const fileToUpload = finalCroppedFile || await (await fetch(croppedFileUrl)).blob();
+    const formData = new FormData();
+    formData.append("mssv", mssv);
+    formData.append("photo", fileToUpload, `${mssv.trim()}.jpg`);
+    formData.append("eventId", event.id);
+
+    try {
+      const response = await fetch("/api/register", { method: "POST", body: formData });
+      const data = await response.json();
+      setMessage(data.message);
+      if (response.ok) { setTimeout(onClose, 3000); }
+    } catch (error) {
+      setMessage("Lỗi hệ thống, vui lòng thử lại sau.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="modal-backdrop">
@@ -93,26 +185,4 @@ export default function RegistrationModal({ event, onClose }) {
       </div>
     </div>
   );
-}
-
-// Dán lại nội dung các hàm đã rút gọn ở trên
-function getCroppedImg(image, crop, fileName) {
-    const canvas = document.createElement('canvas');
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    canvas.width = crop.width;
-    canvas.height = crop.height;
-    const ctx = canvas.getContext('2d');
-    const pixelRatio = window.devicePixelRatio;
-    canvas.width = crop.width * pixelRatio;
-    canvas.height = crop.height * pixelRatio;
-    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(image, crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY, 0, 0, crop.width, crop.height);
-    return new Promise((resolve) => {
-        canvas.toBlob(blob => {
-            if (!blob) { console.error('Canvas is empty'); return; }
-            resolve(new File([blob], fileName, { type: 'image/jpeg' }));
-        }, 'image/jpeg', 0.95);
-    });
 }

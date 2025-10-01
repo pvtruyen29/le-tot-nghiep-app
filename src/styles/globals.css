@@ -511,3 +511,181 @@ a {
 .auth-error-button:hover {
   background-color: #00457c;
 }
+/* src/styles/globals.css */
+
+/* --- BANNER CHÍNH --- */
+.hero-banner {
+    width: 100%;
+    padding: 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #005691, #00407a);
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    margin-bottom: 2rem;
+    position: relative; /* Cần cho việc định vị các nút */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hero-banner h1 {
+    font-size: 2rem; /* Làm nhỏ lại tiêu đề */
+    margin-top: 1rem;
+    max-width: 600px;
+}
+
+.hero-logo {
+    width: 70px; /* Làm nhỏ lại logo */
+    height: 70px;
+}
+
+/* Container cho 2 nút ở góc banner */
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    position: absolute;
+    top: 1rem;
+    left: 0;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
+}
+
+.schedule-link-container {
+    align-self: flex-start;
+}
+
+.login-status {
+    align-self: flex-start;
+}
+
+/* Style chung cho nút trên header */
+.header-action-btn {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.header-action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-info span {
+    font-weight: 600;
+}
+
+
+/* --- BOX SỰ KIỆN --- */
+.event-card-detailed {
+    display: flex;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.event-card-detailed:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.event-card-image-wrapper {
+    flex-shrink: 0;
+}
+
+.event-card-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.event-card-content h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+/* Lưới thông tin 2 cột */
+.event-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.info-col p {
+    margin: 0.5rem 0;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+/* Ghi chú */
+.event-notes {
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+    padding: 0.75rem;
+    margin-top: auto; /* Đẩy xuống dưới */
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+}
+
+/* Container cho nút đăng ký */
+.event-card-actions {
+    margin-top: auto; /* Đẩy nút xuống góc */
+    align-self: flex-end; /* Căn lề phải */
+}
+
+/* Nút đăng ký nhỏ */
+.register-btn-small {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.register-btn-small:hover {
+    background-color: #00457c;
+}
+
+/* Responsive cho màn hình nhỏ */
+@media (max-width: 768px) {
+    .hero-banner h1 {
+        font-size: 1.5rem;
+    }
+    .header-actions {
+        position: static;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .event-card-detailed {
+        flex-direction: column;
+    }
+    .event-info-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}

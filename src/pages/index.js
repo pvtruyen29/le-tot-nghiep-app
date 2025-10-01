@@ -6,14 +6,15 @@ import { db } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import RegistrationModal from "../components/RegistrationModal";
 
+// Hàm phụ trợ để format ngày tháng
 const formatDate = (timestamp) => {
-    if (!timestamp?.toDate) {
-        return { day: '?', month: 'N/A', full: 'Chưa có thông tin' };
+    if (!timestamp || !timestamp.toDate) {
+        return { day: 'N/A', month: 'N/A', full: 'Chưa cập nhật' };
     }
-    const date = new Date(timestamp.toDate());
+    const date = timestamp.toDate();
     const day = date.getDate();
     const month = `Thg ${date.getMonth() + 1}`;
-    const full = date.toLocaleString('vi-VN', {
+    const full = date.toLocaleTimeString('vi-VN', {
         hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
     });
     return { day, month, full };
@@ -57,76 +58,84 @@ export default function Home() {
         setSelectedEvent(null);
     };
 
-    if (loading && status === 'loading') {
-        return <div style={{ textAlign: 'center', paddingTop: '5rem', fontSize: '1.5rem' }}>Đang tải...</div>;
-    }
-
     return (
         <div className="container">
             <Head>
                 <title>Sự kiện Tốt nghiệp - Đại học Cần Thơ</title>
                 <link rel="icon" href="/favicon.ico" />
             </Head>
+
             <header className="hero-banner">
                 <img src="/CTU_Logo.png" alt="Logo Đại học Cần Thơ" className="hero-logo" />
                 <h1>Hệ thống Đăng ký Sự kiện Lễ Tốt nghiệp</h1>
                 
-                <div className="login-status">
-                    {status === "loading" && <p>Đang tải...</p>}
-                    {status === "unauthenticated" && (
-                        <button className="login-btn" onClick={() => signIn('google')}>
-                            Đăng nhập với Email Sinh viên
-                        </button>
-                    )}
-                    {status === "authenticated" && (
-                        <div>
-                            <p>Xin chào, {session.user.name}</p>
-                            <button className="logout-btn" onClick={() => signOut()}>
-                                Đăng xuất
+                <div className="header-actions">
+                    <div className="schedule-link-container">
+                        <a href="/lich-tot-nghiep-toan-truong.png" target="_blank" rel="noopener noreferrer" className="header-action-btn">
+                            📅 Lịch tốt nghiệp toàn trường
+                        </a>
+                    </div>
+                    <div className="login-status">
+                        {status === "loading" && <p>Đang tải...</p>}
+                        {status === "unauthenticated" && (
+                            <button className="header-action-btn login-btn" onClick={() => signIn('google')}>
+                                Đăng nhập
                             </button>
-                        </div>
-                    )}
+                        )}
+                        {status === "authenticated" && (
+                            <div className="user-info">
+                                <span>Xin chào, {session.user.name}</span>
+                                <button className="header-action-btn logout-btn" onClick={() => signOut()}>
+                                    Đăng xuất
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </header>
 
-            <div className="schedule-link-container">
-                <a href="/lich-tot-nghiep-toan-truong.png" target="_blank" rel="noopener noreferrer" className="schedule-link-button">
-                    📅 Xem Lịch tổ chức Lễ tốt nghiệp (Toàn trường)
-                </a>
-            </div>
-
             <main>
-                <div className="event-grid-detailed">
-                    {events.map((event) => {
-                        const eventDate = formatDate(event.eventTime);
-                        return (
-                            <div key={event.id} className="event-card-detailed">
-                                <div className="event-card-image-wrapper">
-                                    <img src={event.imageUrl} alt={event.title} className="event-card-image" />
-                                    <div className="event-card-date">
-                                        <span className="month">{eventDate.month}</span>
-                                        <span className="day">{eventDate.day}</span>
+                {loading ? <div className="loader-container"><div className="loader"></div></div> : (
+                    <div className="event-grid-detailed">
+                        {events.map((event) => {
+                            const eventDate = formatDate(event.eventTime);
+                            return (
+                                <div key={event.id} className="event-card-detailed">
+                                    <div className="event-card-image-wrapper">
+                                        <img src={event.imageUrl} alt={event.title} className="event-card-image" />
+                                        <div className="event-card-date">
+                                            <span className="day">{eventDate.day}</span>
+                                            <span className="month">{eventDate.month}</span>
+                                        </div>
+                                    </div>
+                                    <div className="event-card-content">
+                                        <h3>{event.title}</h3>
+                                        <div className="event-info-grid">
+                                            {/* Cột trái */}
+                                            <div className="info-col">
+                                                <p><strong>🏢 Đơn vị:</strong> {event.organizer || 'Chưa cập nhật'}</p>
+                                                <p><strong>📍 Địa điểm:</strong> {event.location || 'Chưa cập nhật'}</p>
+                                                <p><strong>🗓️ Thời gian:</strong> {eventDate.full}</p>
+                                            </div>
+                                            {/* Cột phải */}
+                                            <div className="info-col">
+                                                <p><strong>🕔 Bắt đầu ĐK:</strong> {formatDate(event.startTime).full}</p>
+                                                <p><strong>🕔 Hạn chót ĐK:</strong> {formatDate(event.endTime).full}</p>
+                                                <p><strong>📊 Số lượng:</strong> {event.registeredCount || 0} / {event.eligibleCount || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                        {event.notes && <p className="event-notes"><strong>📝 Ghi chú:</strong> {event.notes}</p>}
+                                        <div className="event-card-actions">
+                                            <button className="register-btn-small" onClick={() => handleRegisterClick(event)}>
+                                                Đăng ký
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="event-info">
-                                    <h3>{event.title}</h3>
-                                    <div className="info-grid">
-                                        <p className="info-item"><strong>🏢 Đơn vị:</strong> {event.organizer || 'Chưa cập nhật'}</p>
-                                        <p className="info-item"><strong>📍 Địa điểm:</strong> {event.location || 'Chưa cập nhật'}</p>
-                                        <p className="info-item"><strong>🗓️ Thời gian:</strong> {eventDate.full}</p>
-                                        <p className="info-item"><strong>🕔 Bắt đầu ĐK:</strong> {formatDate(event.startTime).full}</p>
-                                        <p className="info-item"><strong>🕔 Hạn chót ĐK:</strong> {formatDate(event.endTime).full}</p>
-                                        <p className="info-item"><strong>📊 Số lượng:</strong> {event.registeredCount || 0} / {event.eligibleCount || 'N/A'}</p>
-                                    </div>
-                                    {event.notes && <p className="info-item notes"><strong>📝 Ghi chú:</strong> {event.notes}</p>}
-                                    <button className="register-btn" onClick={() => handleRegisterClick(event)}>
-                                        Đăng ký ngay
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
+                            )
+                        })}
+                    </div>
+                )}
             </main>
             {isRegisterModalOpen && <RegistrationModal event={selectedEvent} onClose={handleCloseModal} />}
         </div>

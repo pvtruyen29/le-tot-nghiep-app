@@ -1,8 +1,9 @@
 // src/components/RegistrationModal.js
 import { useState, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
-// Hàm helper để tạo ảnh đã được cắt (giữ nguyên)
 function getCroppedImg(image, crop, fileName) {
   const canvas = document.createElement('canvas');
   const scaleX = image.naturalWidth / image.width;
@@ -10,25 +11,12 @@ function getCroppedImg(image, crop, fileName) {
   canvas.width = crop.width;
   canvas.height = crop.height;
   const ctx = canvas.getContext('2d');
-
   const pixelRatio = window.devicePixelRatio;
   canvas.width = crop.width * pixelRatio;
   canvas.height = crop.height * pixelRatio;
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   ctx.imageSmoothingQuality = 'high';
-
-  ctx.drawImage(
-    image,
-    crop.x * scaleX,
-    crop.y * scaleY,
-    crop.width * scaleX,
-    crop.height * scaleY,
-    0,
-    0,
-    crop.width,
-    crop.height
-  );
-
+  ctx.drawImage(image, crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY, 0, 0, crop.width, crop.height);
   return new Promise((resolve) => {
     canvas.toBlob(blob => {
       if (!blob) { console.error('Canvas is empty'); return; }
@@ -37,31 +25,22 @@ function getCroppedImg(image, crop, fileName) {
   });
 }
 
-const formatDate = (timestamp) => {
-    if (!timestamp?.toDate) return 'Chưa có thông tin';
-    return new Date(timestamp.toDate()).toLocaleString('vi-VN', {
-        dateStyle: 'full',
-        timeStyle: 'short'
-    });
-};
-
 export default function RegistrationModal({ event, onClose }) {
+  const { data: session } = useSession();
   const [mssv, setMssv] = useState("");
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef(null);
-  
   const [crop, setCrop] = useState();
   const [completedCrop, setCompletedCrop] = useState(null);
   const [croppedFileUrl, setCroppedFileUrl] = useState('');
   let finalCroppedFile = null;
-
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isInfoValid, setIsInfoValid] = useState(false);
 
   const onSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setCrop(undefined);
-      setCroppedFileUrl('');
+      setCrop(undefined); setCroppedFileUrl(''); setIsInfoValid(false); setMessage('');
       const reader = new FileReader();
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
       reader.readAsDataURL(e.target.files[0]);
@@ -71,43 +50,54 @@ export default function RegistrationModal({ event, onClose }) {
   const onImageLoad = (e) => {
     imgRef.current = e.currentTarget;
     const { width, height } = e.currentTarget;
-    // Tỷ lệ 3/4
-    const aspect = 3 / 4; 
-    const newCrop = centerCrop(
-      makeAspectCrop({ unit: '%', width: 90 }, aspect, width, height),
-      width,
-      height
-    );
+    const newCrop = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, 3 / 4, width, height), width, height);
     setCrop(newCrop);
   };
 
-  const handleCreateCroppedFile = async () => {
-    if (!mssv.trim()) {
-        setMessage('Vui lòng nhập MSSV trước khi cắt ảnh.');
-        return;
+  const handleCropAndValidate = async () => {
+    setIsLoading(true); setMessage("Đang kiểm tra..."); setIsInfoValid(false);
+    if (!mssv.trim() || !completedCrop || !imgRef.current) {
+      setMessage('Vui lòng nhập MSSV và chọn vùng ảnh.'); setIsLoading(false); return;
     }
-    if (!completedCrop || !imgRef.current) {
-        setMessage('Vui lòng chọn vùng ảnh hợp lệ.');
-        return;
+    if (!session?.user?.email) {
+      setMessage("[Lỗi] Không thể xác thực email."); setIsLoading(false); return;
     }
-    const fileName = `${mssv.trim()}.jpg`;
-    const croppedImageFile = await getCroppedImg(imgRef.current, completedCrop, fileName);
-    
+    const usernameFromEmail = session.user.email.split('@')[0];
+    if (!usernameFromEmail.toUpperCase().includes(mssv.toUpperCase())) {
+      setMessage(`[Lỗi] Email bạn đang dùng không khớp với MSSV "${mssv}".`); setIsLoading(false); return;
+    }
+
+    const croppedImageFile = await getCroppedImg(imgRef.current, completedCrop, `${mssv.trim()}.jpg`);
     finalCroppedFile = croppedImageFile;
-    if (croppedFileUrl) { URL.revokeObjectURL(croppedFileUrl); } // Giải phóng bộ nhớ
+    if (croppedFileUrl) { URL.revokeObjectURL(croppedFileUrl); }
     setCroppedFileUrl(URL.createObjectURL(croppedImageFile));
-    setMessage('Đã cắt ảnh thành công!');
-  }
+    
+    const formData = new FormData();
+    formData.append('photo', croppedImageFile);
+
+    try {
+      const response = await fetch('/api/validate-image', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+      setMessage(result.message);
+      if (response.ok) {
+        setIsInfoValid(true);
+      }
+    } catch (error) {
+        setMessage('Lỗi kết nối đến server kiểm tra ảnh.');
+    } finally {
+        setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!mssv || !croppedFileUrl) {
-        setMessage("Vui lòng nhập MSSV, chọn và cắt ảnh trước khi đăng ký.");
-        return;
+    if (!isInfoValid) {
+        setMessage("Thông tin chưa hợp lệ. Vui lòng nhấn 'Cắt và Kiểm tra' trước."); return;
     }
-    setIsLoading(true);
-    setMessage("");
-
+    setIsLoading(true); setMessage("");
     const fileToUpload = finalCroppedFile || await (await fetch(croppedFileUrl)).blob();
     const formData = new FormData();
     formData.append("mssv", mssv);
@@ -130,67 +120,31 @@ export default function RegistrationModal({ event, onClose }) {
     <div className="modal-backdrop">
       <div className="modal-content modal-large">
         {isLoading && <div className="loading-overlay"><div className="loader"></div></div>}
-        
-        <div className="modal-grid">
-            {/* === CỘT TRÁI: THÔNG TIN VÀ THAO TÁC === */}
-            <div className="modal-col-info">
-                <h2 className="modal-title">{event.title}</h2>
-                <div className="info-box">
-                    <h3 className="box-title">Thông tin sự kiện</h3>
-                    <div className="event-details">
-                        <p><strong>Đơn vị:</strong> {event.organizer || 'Chưa cập nhật'}</p>
-                        <p><strong>Địa điểm:</strong> {event.location || 'Chưa cập nhật'}</p>
-                        <p><strong>Thời gian:</strong> {formatDate(event.eventTime)}</p>
-                        <p><strong>Hạn ĐK:</strong> {formatDate(event.endTime)}</p>
-                    </div>
+        <form onSubmit={handleSubmit} className="form-box">
+            <h2 className="modal-title" style={{textAlign: 'center'}}>{event.title}</h2>
+            <div className="modal-grid-register">
+                <div className="modal-col-left">
+                    <div className="form-group"><label>Bước 1: Nhập Mã số sinh viên</label><input type="text" value={mssv} onChange={(e) => setMssv(e.target.value.toUpperCase())} placeholder="Ví dụ: B1234567" required /></div>
+                    <div className="form-group"><label>Bước 2: Chọn ảnh chân dung</label><input type="file" accept="image/*" onChange={onSelectFile} /></div>
+                    <div className="photo-guidelines"><p><strong>Lưu ý quan trọng về ảnh:</strong></p><ul><li><strong>Bố cục:</strong> Ảnh rõ nét, chính diện, chỉ có một người.</li><li><strong>Trang phục:</strong> Lịch sự, khuyến khích mặc lễ phục.</li><li><strong>Phông nền:</strong> Nền trơn hoặc ảnh xóa phông.</li></ul></div>
                 </div>
-                <form onSubmit={handleSubmit} className="form-box">
-                    <h3 className="box-title">Form Đăng ký</h3>
-                    <div className="form-group">
-                        <label htmlFor="mssv">1. Nhập Mã số sinh viên:</label>
-                        <input type="text" id="mssv" value={mssv} onChange={(e) => setMssv(e.target.value.toUpperCase())} placeholder="Ví dụ: B1234567" required />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="photo">2. Chọn ảnh chân dung:</label>
-                        <input type="file" id="photo" accept="image/*" onChange={onSelectFile} />
-                    </div>
-                    <div className="modal-actions">
-                        <button type="button" className="btn-secondary" onClick={onClose} disabled={isLoading}>Đóng</button>
-                        <button type="submit" className="register-btn" disabled={isLoading || !croppedFileUrl}>
-                            {isLoading ? 'Đang xử lý...' : '4. Xác nhận'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {/* === CỘT PHẢI: HIỂN THỊ HÌNH ẢNH === */}
-            <div className="modal-col-action">
-                {imgSrc ? (
-                    <div className="crop-container">
-                        <label>3. Điều chỉnh và cắt ảnh (tỷ lệ 3x4):</label>
-                        <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
-                            <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
-                        </ReactCrop>
-                        <button type="button" className="btn-crop" onClick={handleCreateCroppedFile}>
-                            Cắt ảnh
-                        </button>
-                    </div>
-                ) : (
-                    <div className="placeholder-image">Vui lòng chọn ảnh để bắt đầu</div>
-                )}
-                
-                {croppedFileUrl && (
-                    <div className="preview-container">
-                        <p>Xem trước ảnh đã cắt:</p>
-                        <div className="preview-frame" style={{ aspectRatio: '3 / 4' }}>
-                            <img src={croppedFileUrl} alt="Ảnh đã cắt" />
+                <div className="modal-col-right">
+                    {imgSrc ? (
+                        <div className="crop-container-fixed">
+                            <label>Bước 3: Điều chỉnh và Kiểm tra</label>
+                            <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}><img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/></ReactCrop>
+                            <button type="button" className="btn-crop-main" onClick={handleCropAndValidate} disabled={isLoading}>Cắt và Kiểm tra</button>
                         </div>
-                    </div>
-                )}
-                
-                {message && <p className="message message-right">{message}</p>}
+                    ) : (<div className="placeholder-image"><p>Vùng xem trước và cắt ảnh sẽ hiện ở đây.</p></div>)}
+                    {croppedFileUrl && (<div className="preview-container"><p>Xem trước ảnh đã cắt:</p><div className="preview-frame" style={{ aspectRatio: '3 / 4' }}><img src={croppedFileUrl} alt="Ảnh đã cắt" /></div></div>)}
+                </div>
             </div>
-        </div>
+            {message && <p className="message message-fullwidth">{message}</p>}
+            <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={onClose} disabled={isLoading}>Đóng</button>
+                <button type="submit" className="register-btn" disabled={isLoading || !isInfoValid}>{isLoading ? 'Đang xử lý...' : 'Xác nhận Đăng ký / Cập nhật'}</button>
+            </div>
+        </form>
       </div>
     </div>
   );

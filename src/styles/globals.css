@@ -689,3 +689,121 @@ a {
         gap: 0;
     }
 }
+/* src/styles/globals.css */
+
+/* --- POPUP ĐĂNG KÝ GIAO DIỆN MỚI --- */
+
+/* Tăng chiều rộng tối đa của popup */
+.modal-content.modal-large-wide {
+    max-width: 1000px;
+}
+
+/* Phần trên: Nhập liệu và Hướng dẫn */
+.modal-top-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.modal-col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.modal-col-right {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-main-actions {
+    margin-top: auto; /* Đẩy các nút xuống dưới cùng của cột phải */
+    padding-top: 1rem;
+    display: flex;
+    justify-content: flex-end; /* Căn các nút về phía bên phải */
+    gap: 1rem;
+}
+
+
+/* Phần dưới: Xử lý ảnh */
+.modal-image-section {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 2rem;
+    display: flex;
+    gap: 1.5rem;
+}
+
+/* Khu vực cắt ảnh (70%) */
+.image-cropping-area {
+    flex: 0 0 70%;
+    display: flex;
+    flex-direction: column;
+}
+
+.image-cropping-area > label {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: block;
+    color: var(--primary-color);
+}
+
+.crop-container-16-9 {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.crop-container-16-9 .ReactCrop__child-wrapper {
+    max-height: 100%;
+}
+.crop-container-16-9 img {
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.btn-crop-main {
+    margin-top: 1rem;
+    align-self: center;
+}
+
+/* Khu vực xem trước (30%) */
+.image-preview-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 250px;
+}
+
+.placeholder-preview {
+    text-align: center;
+    color: #6c757d;
+}
+
+.message.message-inline {
+    width: 100%;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* --- Responsive cho màn hình nhỏ --- */
+@media (max-width: 992px) {
+    .modal-top-section {
+        grid-template-columns: 1fr;
+    }
+    .modal-image-section {
+        flex-direction: column;
+    }
+    .image-cropping-area {
+        flex-basis: auto;
+    }
+}

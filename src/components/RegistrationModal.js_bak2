@@ -1,9 +1,7 @@
 // src/components/RegistrationModal.js
-import { useState, useRef, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useRef } from 'react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import * as faceapi from 'face-api.js';
 
 // --- HÀM PHỤ TRỢ ---
 function getCroppedImg(image, crop, fileName) {
@@ -41,8 +39,6 @@ function getCroppedImg(image, crop, fileName) {
 
 // --- COMPONENT CHÍNH ---
 export default function RegistrationModal({ event, onClose }) {
-  const { data: session } = useSession();
-  const [modelsLoaded, setModelsLoaded] = useState(false);
   const [mssv, setMssv] = useState("");
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef(null);
@@ -52,32 +48,11 @@ export default function RegistrationModal({ event, onClose }) {
   let finalCroppedFile = null;
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [isPhotoValid, setIsPhotoValid] = useState(false);
-
-  useEffect(() => {
-    const loadModels = async () => {
-      const MODEL_URL = '/models';
-      try {
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-        ]);
-        setModelsLoaded(true);
-      } catch (error) {
-        console.error("Error loading face detection models:", error);
-        setMessage("Lỗi tải model nhận diện, vui lòng tải lại trang.");
-      }
-    };
-    loadModels();
-  }, []);
 
   const onSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       setCrop(undefined);
       setCroppedFileUrl('');
-      setIsPhotoValid(false);
-      setMessage('');
       const reader = new FileReader();
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
       reader.readAsDataURL(e.target.files[0]);
@@ -87,62 +62,36 @@ export default function RegistrationModal({ event, onClose }) {
   const onImageLoad = (e) => {
     imgRef.current = e.currentTarget;
     const { width, height } = e.currentTarget;
-    const newCrop = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, 3 / 4, width, height), width, height);
+    const newCrop = centerCrop(
+      makeAspectCrop({ unit: '%', width: 90 }, 3 / 4, width, height),
+      width,
+      height
+    );
     setCrop(newCrop);
   };
 
-  const handleCreateAndValidate = async () => {
-    setIsLoading(true);
-    setMessage("Đang kiểm tra thông tin...");
-    setIsPhotoValid(false);
+  const handleCreateCroppedFile = async () => {
+    if (!mssv.trim()) {
+        setMessage('Vui lòng nhập MSSV trước khi cắt ảnh.');
+        return;
+    }
+    if (!completedCrop || !imgRef.current) {
+        setMessage('Vui lòng chọn vùng ảnh hợp lệ.');
+        return;
+    }
+    const fileName = `${mssv.trim()}.jpg`;
+    const croppedImageFile = await getCroppedImg(imgRef.current, completedCrop, fileName);
     
-    if (!mssv.trim() || !completedCrop || !imgRef.current || !modelsLoaded) {
-      setMessage('Vui lòng nhập MSSV, chọn ảnh và chờ model tải xong.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!session || !session.user || !session.user.email) {
-      setMessage("[Lỗi] Không thể xác thực email, vui lòng đăng nhập lại.");
-      setIsLoading(false);
-      return;
-    }
-
-    const usernameFromEmail = session.user.email.split('@')[0];
-    if (!usernameFromEmail.toUpperCase().includes(mssv.toUpperCase())) {
-      setMessage(`[Lỗi] Email bạn đang dùng không khớp với MSSV "${mssv}".`);
-      setIsLoading(false);
-      return;
-    }
-
-    const croppedImageFile = await getCroppedImg(imgRef.current, completedCrop, `${mssv.trim()}.jpg`);
     finalCroppedFile = croppedImageFile;
-    const tempUrl = URL.createObjectURL(croppedImageFile);
-    setCroppedFileUrl(tempUrl);
-
-    try {
-      const img = await faceapi.bufferToImage(croppedImageFile);
-      const detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions());
-      
-      if (detections.length === 1) {
-        setMessage("Thông tin hợp lệ! Bạn có thể nhấn Xác nhận.");
-        setIsPhotoValid(true);
-      } else if (detections.length > 1) {
-        setMessage("[Lỗi] Ảnh chứa nhiều hơn một khuôn mặt. Vui lòng chọn ảnh chỉ có một mình bạn.");
-      } else {
-        setMessage("[Lỗi] Không nhận diện được khuôn mặt. Vui lòng chọn ảnh chân dung rõ nét, chính diện.");
-      }
-    } catch (error) {
-      setMessage("Có lỗi xảy ra trong quá trình phân tích ảnh.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    if (croppedFileUrl) { URL.revokeObjectURL(croppedFileUrl); }
+    setCroppedFileUrl(URL.createObjectURL(croppedImageFile));
+    setMessage('Đã cắt ảnh thành công! Bạn có thể nhấn Xác nhận.');
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isPhotoValid) {
-        setMessage("Thông tin chưa hợp lệ. Vui lòng nhấn 'Cắt và Kiểm tra ảnh' trước khi xác nhận.");
+    if (!mssv || !croppedFileUrl) {
+        setMessage("Vui lòng nhập MSSV, chọn và cắt ảnh trước khi đăng ký.");
         return;
     }
     setIsLoading(true);
@@ -176,6 +125,7 @@ export default function RegistrationModal({ event, onClose }) {
             <p style={{textAlign: 'center', marginTop: '-1rem', marginBottom: '1.5rem'}}>Vui lòng thực hiện các bước sau để đăng ký:</p>
             
             <div className="modal-grid-register">
+                {/* CỘT TRÁI */}
                 <div className="modal-col-left">
                     <div className="form-group">
                         <label>Bước 1: Nhập Mã số sinh viên</label>
@@ -195,15 +145,16 @@ export default function RegistrationModal({ event, onClose }) {
                     </div>
                 </div>
 
+                {/* CỘT PHẢI */}
                 <div className="modal-col-right">
                     {imgSrc ? (
                         <div className="crop-container-fixed">
-                            <label>Bước 3: Điều chỉnh và Kiểm tra ảnh</label>
+                            <label>Bước 3: Điều chỉnh và Cắt ảnh</label>
                             <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
                                 <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
                             </ReactCrop>
-                            <button type="button" className="btn-crop-main" onClick={handleCreateAndValidate}>
-                                Cắt và Kiểm tra ảnh
+                            <button type="button" className="btn-crop-main" onClick={handleCreateCroppedFile}>
+                                Cắt ảnh
                             </button>
                         </div>
                     ) : (
@@ -226,7 +177,7 @@ export default function RegistrationModal({ event, onClose }) {
 
             <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={onClose} disabled={isLoading}>Đóng</button>
-                <button type="submit" className="register-btn" disabled={isLoading || !isPhotoValid}>
+                <button type="submit" className="register-btn" disabled={isLoading || !croppedFileUrl}>
                     {isLoading ? 'Đang xử lý...' : 'Xác nhận Đăng ký'}
                 </button>
             </div>

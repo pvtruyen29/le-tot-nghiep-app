@@ -13,7 +13,6 @@
     "activedirectory2": "^2.2.0",
     "bwip-js": "^4.7.0",
     "exceljs": "^4.4.0",
-    "face-api.js": "^0.22.2",
     "firebase": "^12.3.0",
     "firebase-admin": "^13.5.0",
     "formidable": "^3.5.4",

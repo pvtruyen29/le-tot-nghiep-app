@@ -5,6 +5,7 @@ let db;
 let storage;
 
 try {
+  // Chỉ khởi tạo app một lần duy nhất
   if (!admin.apps.length) {
     const base64ServiceAccount = process.env.FIREBASE_ADMIN_CONFIG_BASE64;
     if (!base64ServiceAccount) {
@@ -12,23 +13,27 @@ try {
     }
     const serviceAccountJson = Buffer.from(base64ServiceAccount, 'base64').toString('utf-8');
     const serviceAccount = JSON.parse(serviceAccountJson);
-    
-    // **LOG GỠ LỖI CUỐI CÙNG**
-    const bucketName = `${serviceAccount.project_id}.appspot.com`;
-    console.log(`[FIREBASE-ADMIN-DEBUG] Initializing with Project ID: "${serviceAccount.project_id}"`);
-    console.log(`[FIREBASE-ADMIN-DEBUG] Attempting to connect to Storage Bucket: "${bucketName}"`);
+
+    // **SỬA LỖI: CHỈ ĐỊNH TÊN BUCKET CHÍNH XÁC**
+    const correctBucketName = "le-tot-nghiep-app.firebasestorage.app";
+    console.log(`[FIREBASE-ADMIN-DEBUG] Initializing with custom bucket name: "${correctBucketName}"`);
 
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      storageBucket: bucketName
+      storageBucket: correctBucketName // Sử dụng tên bucket chính xác
     });
+
+    console.log("Firebase Admin initialized successfully.");
   }
+  
   db = admin.firestore();
   storage = admin.storage();
+
 } catch (error) {
   console.error('CRITICAL: Firebase admin initialization error:', error);
   db = null;
   storage = null;
 }
 
+// Luôn luôn export db và storage
 export { db, storage };

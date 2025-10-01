@@ -58,14 +58,11 @@ export default function RegistrationModal({ event, onClose }) {
     const loadModels = async () => {
       const MODEL_URL = '/models';
       try {
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-        ]);
+        // TỐI ƯU: Chỉ tải model nhận diện khuôn mặt nhẹ nhất
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
         setModelsLoaded(true);
       } catch (error) {
-        console.error("Error loading face detection models:", error);
+        console.error("Error loading face detection model:", error);
         setMessage("Lỗi tải model nhận diện, vui lòng tải lại trang.");
       }
     };
@@ -92,22 +89,25 @@ export default function RegistrationModal({ event, onClose }) {
   };
 
   const handleCreateAndValidate = async () => {
+    if (!mssv.trim()) {
+        setMessage('Vui lòng nhập MSSV trước.');
+        return;
+    }
+    if (!completedCrop || !imgRef.current) {
+        setMessage('Vui lòng chọn ảnh và vùng cắt hợp lệ.');
+        return;
+    }
+    
     setIsLoading(true);
     setMessage("Đang kiểm tra thông tin...");
     setIsPhotoValid(false);
-    
-    if (!mssv.trim() || !completedCrop || !imgRef.current || !modelsLoaded) {
-      setMessage('Vui lòng nhập MSSV, chọn ảnh và chờ model tải xong.');
-      setIsLoading(false);
-      return;
-    }
 
     if (!session || !session.user || !session.user.email) {
       setMessage("[Lỗi] Không thể xác thực email, vui lòng đăng nhập lại.");
       setIsLoading(false);
       return;
     }
-
+    
     const usernameFromEmail = session.user.email.split('@')[0];
     if (!usernameFromEmail.toUpperCase().includes(mssv.toUpperCase())) {
       setMessage(`[Lỗi] Email bạn đang dùng không khớp với MSSV "${mssv}".`);
@@ -122,6 +122,7 @@ export default function RegistrationModal({ event, onClose }) {
 
     try {
       const img = await faceapi.bufferToImage(croppedImageFile);
+      // Sử dụng TinyFaceDetectorOptions để tăng tốc độ
       const detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions());
       
       if (detections.length === 1) {
@@ -202,8 +203,13 @@ export default function RegistrationModal({ event, onClose }) {
                             <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
                                 <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
                             </ReactCrop>
-                            <button type="button" className="btn-crop-main" onClick={handleCreateAndValidate}>
-                                Cắt và Kiểm tra ảnh
+                            <button 
+                                type="button" 
+                                className="btn-crop-main" 
+                                onClick={handleCreateAndValidate}
+                                disabled={!modelsLoaded || isLoading}
+                            >
+                                {!modelsLoaded ? 'Đang tải model...' : 'Cắt và Kiểm tra ảnh'}
                             </button>
                         </div>
                     ) : (
@@ -211,6 +217,13 @@ export default function RegistrationModal({ event, onClose }) {
                             <p>Vùng xem trước và cắt ảnh sẽ hiện ở đây.</p>
                         </div>
                     )}
+                    
+                    {!modelsLoaded && imgSrc &&
+                        <p className='message-loading-model'>
+                            Vui lòng chờ giây lát, hệ thống đang tải công cụ nhận diện...
+                        </p>
+                    }
+
                     {croppedFileUrl && (
                         <div className="preview-container">
                             <p>Xem trước ảnh đã cắt:</p>

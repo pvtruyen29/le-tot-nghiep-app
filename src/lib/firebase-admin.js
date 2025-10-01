@@ -14,7 +14,7 @@ try {
 
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      storageBucket: `${serviceAccount.project_id}.appspot.com` // Hoặc .firebasestorage.app tùy dự án
+      storageBucket: `${serviceAccount.project_id}.firebasestorage.com` // Hoặc .firebasestorage.app tùy dự án
     });
   }
   db = admin.firestore();

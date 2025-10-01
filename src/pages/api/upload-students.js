@@ -1,74 +1,81 @@
 // src/pages/api/upload-students.js
 import { IncomingForm } from 'formidable';
-import { db } from '../../lib/firebase-admin';
-import csv from 'csv-parser';
+import Papa from 'papaparse';
 import fs from 'fs';
+import { db } from '../../lib/firebase-admin';
 
 export const config = {
-    api: {
-        bodyParser: false,
-    },
+  api: { bodyParser: false },
 };
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
-    }
-
-    const form = new IncomingForm();
-    form.parse(req, async (err, fields, files) => {
-        if (err) {
-            return res.status(500).json({ message: 'Error parsing form data' });
-        }
-
-        const eventId = fields.eventId?.[0];
-        const file = files.file?.[0];
-
-        if (!eventId || !file) {
-            return res.status(400).json({ message: 'Missing eventId or file' });
-        }
-
-        const results = [];
-        fs.createReadStream(file.filepath)
-            .pipe(csv())
-            .on('data', (data) => results.push(data))
-            .on('end', async () => {
-                try {
-                    const batch = db.batch();
-                    const collectionRef = db.collection('eligibleStudents');
-
-                    results.forEach((row) => {
-                        // Giả sử cột trong CSV của bạn là 'MSSV', 'HoTen', 'Email'
-                        const mssv = row.MSSV?.trim().toUpperCase();
-                        const hoTen = row.HoTen?.trim();
-                        const email = row.Email?.trim();
-
-                        if (!mssv) return; // Bỏ qua hàng trống
-
-                        // TẠO DOCUMENT VỚI ID THEO CẤU TRÚC MỚI
-                        const docId = `${eventId}_${mssv}`;
-                        const docRef = collectionRef.doc(docId); 
-                        
-                        batch.set(docRef, {
-                            mssv: mssv,
-                            hoTen: hoTen || '',
-                            email: email || '',
-                            eventId: eventId,
-                        });
-                    });
-
-                    await batch.commit();
-
-                    const eventRef = db.collection('events').doc(eventId);
-                    await eventRef.update({ eligibleCount: results.length });
-
-                    res.status(200).json({ message: `Tải lên và xử lý thành công ${results.length} sinh viên.` });
-                } catch (error) {
-                    console.error('Error writing to Firestore:', error);
-                    res.status(500).json({ message: 'Error writing data to database.' });
-                } finally {
-                    fs.unlinkSync(file.filepath); // Xóa file tạm
-                }
-            });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+  try {
+    const data = await new Promise((resolve, reject) => {
+      const form = new IncomingForm();
+      form.parse(req, (err, fields, files) => {
+        if (err) return reject(err);
+        resolve({ fields, files });
+      });
     });
+    const eventId = data.fields.eventId?.[0];
+    const csvFile = data.files.csvFile?.[0];
+    if (!eventId || !csvFile) {
+      return res.status(400).json({ message: 'Thiếu thông tin sự kiện hoặc file CSV.' });
+    }
+    const fileContent = fs.readFileSync(csvFile.filepath, 'utf8');
+    const studentData = await new Promise((resolve, reject) => {
+      Papa.parse(fileContent, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => resolve(results.data),
+        error: (error) => reject(error),
+      });
+    });
+    if (studentData.length === 0) {
+      return res.status(400).json({ message: 'File CSV không có dữ liệu.' });
+    }
+    const batch = db.batch();
+    let validStudentCount = 0;
+    studentData.forEach(student => {
+      const mssv = student.MSSV?.trim();
+      if (mssv) {
+        validStudentCount++;
+        const studentRef = db.collection('events').doc(eventId).collection('eligibleStudents').doc(mssv);
+        batch.set(studentRef, {
+          dotTN: student.Dot_TN || '',
+          donVi: student.DonVi || '',
+          qd: student.QĐ || '',
+          ngayKy: student.NgayKy || '',
+          hoTen: student.Ho_Ten || '',
+          ngaySinh: student.Ngay_Sinh || '',
+          nu: student.Nu || '',
+          lop: student.Lop || '',
+          nganh: student.Nganh || '',
+          chuyenNganh: student.Chuyen_nganh || '',
+          diemTB: student.Diem_TB || '',
+          diemRL: student.Diem_RL || '',
+          tctl: student.TCTL || '',
+          xepLoai: student.Xep_Loai || '',
+          ghiChu: student.Ghi_chu || '',
+          danToc: student.Dan_Toc || '',
+          khoa: student.Khoa || '',
+          danhHieu: student.Danh_hieu || '',
+          email: student.Email || '',
+        });
+      }
+    });
+    await batch.commit();
+
+    // Cập nhật tổng số sinh viên đủ điều kiện vào document sự kiện
+    const eventRef = db.collection('events').doc(eventId);
+    await eventRef.update({ eligibleCount: validStudentCount });
+
+    return res.status(200).json({ message: `Tải lên thành công ${validStudentCount} sinh viên.` });
+  } catch (error) {
+    console.error('Lỗi khi upload file:', error.message);
+    return res.status(500).json({ message: 'Lỗi từ máy chủ khi xử lý file.' });
+  }
 }

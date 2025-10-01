@@ -24,7 +24,8 @@
     "papaparse": "^5.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-image-crop": "^11.0.10"
+    "react-image-crop": "^11.0.10",
+    "sharp": "^0.34.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

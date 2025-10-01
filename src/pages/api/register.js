@@ -1,95 +1,89 @@
 // src/pages/api/register.js
 import { IncomingForm } from 'formidable';
-import { storage, db } from '../../lib/firebase-admin';
+import { db, storage, serviceAccount } from '../../lib/firebase-admin';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
+import { ImageAnnotatorClient } from '@google-cloud/vision';
 
-export const config = {
-    api: {
-        bodyParser: false,
+// Khởi tạo client cho Google Cloud Vision
+const visionClient = new ImageAnnotatorClient({
+    credentials: {
+        client_email: serviceAccount.client_email,
+        private_key: serviceAccount.private_key,
     },
-};
+    projectId: serviceAccount.project_id,
+});
+
+export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
-    // ... (Phần code xác thực session và parse form giữ nguyên) ...
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
-    console.log("\n--- BẮT ĐẦU YÊU CẦU ĐĂNG KÝ MỚI ---");
-    const session = await getServerSession(req, res, authOptions);
-    if (!session || !session.user || !session.user.email) {
-        return res.status(401).json({ message: 'Chưa xác thực. Vui lòng đăng nhập lại.' });
-    }
-    const loggedInEmail = session.user.email;
-    const form = new IncomingForm();
 
+    const session = await getServerSession(req, res, authOptions);
+    if (!session || !session.user?.email) {
+        return res.status(401).json({ message: 'Chưa xác thực.' });
+    }
+
+    const form = new IncomingForm();
     form.parse(req, async (err, fields, files) => {
         if (err) return res.status(500).json({ message: '[Lỗi Form] Không thể đọc dữ liệu.' });
 
-        const rawMssv = fields.mssv?.[0];
+        const mssv = fields.mssv?.[0]?.trim().toUpperCase();
         const eventId = fields.eventId?.[0];
         const photo = files.photo?.[0];
-        if (!rawMssv || !eventId || !photo) {
-            return res.status(400).json({ message: '[Lỗi Thiếu thông tin] Vui lòng cung cấp đủ MSSV, EventID và ảnh.' });
+
+        if (!mssv || !eventId || !photo) {
+            return res.status(400).json({ message: '[Lỗi Thiếu thông tin].' });
         }
-        const mssv = rawMssv.trim().toUpperCase();
         
         try {
-            // ... (Phần code kiểm tra sinh viên giữ nguyên) ...
+            // 1. Kiểm tra sinh viên có trong danh sách đủ điều kiện không
             const studentRef = db.collection('events').doc(eventId).collection('eligibleStudents').doc(mssv);
             const studentDoc = await studentRef.get();
             if (!studentDoc.exists) {
-                return res.status(404).json({ message: `[Lỗi Dữ liệu] MSSV "${mssv}" không có trong danh sách của sự kiện này.` });
+                return res.status(404).json({ message: `MSSV "${mssv}" không có trong danh sách đủ điều kiện.` });
             }
             const studentData = studentDoc.data();
-            const usernameFromEmail = loggedInEmail.split('@')[0];
-            if (!usernameFromEmail.toUpperCase().includes(mssv)) {
-                 return res.status(403).json({ message: `[Lỗi Quyền] Email bạn đang dùng (${loggedInEmail}) không khớp với MSSV (${mssv}).` });
+
+            // 2. KIỂM TRA ẢNH BẰNG GOOGLE CLOUD VISION API
+            console.log(`[VISION API] Bắt đầu phân tích ảnh cho MSSV: ${mssv}`);
+            const [result] = await visionClient.faceDetection(photo.filepath);
+            const faces = result.faceAnnotations;
+            
+            if (faces.length === 0) {
+                return res.status(400).json({ message: 'Ảnh không hợp lệ: Không tìm thấy khuôn mặt nào.' });
             }
+            if (faces.length > 1) {
+                return res.status(400).json({ message: 'Ảnh không hợp lệ: Ảnh chứa nhiều hơn một người.' });
+            }
+            console.log(`[VISION API] Ảnh hợp lệ, tìm thấy 1 khuôn mặt.`);
+
+            // 3. Tải ảnh lên Storage và xử lý đăng ký/cập nhật
             const registrationRef = db.collection('registrations').doc(`${eventId}_${mssv}`);
             const registrationDoc = await registrationRef.get();
-            if (registrationDoc.exists) {
-                return res.status(409).json({ message: '[Lỗi Trùng lặp] Bạn đã đăng ký sự kiện này rồi.' });
-            }
 
-            // --- BƯỚC 4: TẢI ẢNH LÊN (VỚI CƠ CHẾ GỠ LỖI CHI TIẾT) ---
             const bucket = storage.bucket();
             const destination = `registrations/${eventId}/${mssv}.jpg`;
-
-            // **KHỐI GỠ LỖI MỚI**
-            try {
-                console.log(`[STORAGE-DEBUG] Đang kiểm tra sự tồn tại của bucket: "${bucket.name}"...`);
-                const [exists] = await bucket.exists();
-                if (!exists) {
-                    console.error(`[STORAGE-DEBUG-FAIL] KIỂM TRA THẤT BẠI! Bucket "${bucket.name}" không tồn tại hoặc service account không có quyền truy cập.`);
-                    return res.status(500).json({ 
-                        message: 'Lỗi Cấu hình Server: Không thể tìm thấy kho chứa ảnh (Storage Bucket).',
-                        details: `Bucket "${bucket.name}" không tồn tại. Vui lòng kiểm tra lại Project ID trong biến môi trường và đảm bảo Service Account có role "Storage Admin".`
-                    });
-                }
-                console.log(`[STORAGE-DEBUG-SUCCESS] Bucket "${bucket.name}" hợp lệ. Bắt đầu tải ảnh lên...`);
-            } catch (checkError) {
-                console.error("[STORAGE-DEBUG-CRITICAL] Lỗi nghiêm trọng khi kiểm tra bucket:", checkError);
-                return res.status(500).json({
-                    message: 'Lỗi Cấu hình Server: Không thể xác thực kết nối tới kho chứa ảnh.',
-                    details: 'Quá trình kiểm tra bucket đã thất bại. Có thể do "chìa khóa" service account không hợp lệ hoặc sai quyền.'
-                });
-            }
-            
-            // Tiến hành tải ảnh sau khi đã kiểm tra thành công
             await bucket.upload(photo.filepath, { destination });
             const photoURL = `https://storage.googleapis.com/${bucket.name}/${destination}`;
 
-            // ... (Phần code lưu thông tin đăng ký và cập nhật số lượng giữ nguyên) ...
-            const registrationData = { ...studentData, eventId, mssv, photoURL, registeredAt: new Date() };
-            await registrationRef.set(registrationData);
-            const eventRef = db.collection('events').doc(eventId);
-            const eventDoc = await eventRef.get();
-            if (eventDoc.exists) {
-                const currentCount = eventDoc.data().registeredCount || 0;
-                await eventRef.update({ registeredCount: currentCount + 1 });
-            }
-            
-            res.status(200).json({ message: 'Đăng ký thành công!' });
+            if (registrationDoc.exists) {
+                // CẬP NHẬT ẢNH
+                await registrationRef.update({ photoURL, updatedAt: new Date() });
+                res.status(200).json({ message: 'Cập nhật ảnh thành công!' });
+            } else {
+                // ĐĂNG KÝ MỚI
+                const registrationData = { ...studentData, eventId, mssv, photoURL, registeredAt: new Date() };
+                await registrationRef.set(registrationData);
 
+                const eventRef = db.collection('events').doc(eventId);
+                await db.runTransaction(async (t) => {
+                    const eventDoc = await t.get(eventRef);
+                    const newCount = (eventDoc.data().registeredCount || 0) + 1;
+                    t.update(eventRef, { registeredCount: newCount });
+                });
+                res.status(200).json({ message: 'Đăng ký thành công!' });
+            }
         } catch (error) {
             console.error('[API Lỗi Nghiêm trọng]', error);
             res.status(500).json({ message: '[Lỗi Server] Có lỗi không xác định xảy ra.' });

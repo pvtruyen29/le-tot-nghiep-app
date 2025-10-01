@@ -466,3 +466,48 @@ a {
     padding-top: 56.25%;
   }
 }
+/* --- CSS CHO TRANG LỖI ĐĂNG NHẬP --- */
+.auth-error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f4f6f8;
+  padding: 1rem;
+}
+
+.auth-error-box {
+  background-color: white;
+  padding: 2rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 500px;
+}
+
+.auth-error-box h1 {
+  color: #dc3545; /* Màu đỏ */
+  font-size: 1.8rem;
+  margin: 0 0 1rem 0;
+}
+
+.auth-error-box p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.auth-error-button {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.auth-error-button:hover {
+  background-color: #00457c;
+}

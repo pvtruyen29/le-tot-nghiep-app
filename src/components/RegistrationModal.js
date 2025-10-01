@@ -173,7 +173,7 @@ export default function RegistrationModal({ event, onClose }) {
                     <div className="modal-main-actions">
                         <button type="button" className="btn-secondary" onClick={onClose} disabled={isLoading}>Đóng</button>
                         <button type="submit" className="register-btn" disabled={isLoading || !isInfoValid}>
-                            {isLoading ? 'Đang xử lý...' : 'Xác nhận Đăng ký'}
+                            {isLoading ? 'Đang xử lý...' : '5. Xác nhận Đăng ký'}
                         </button>
                     </div>
                 </div>
@@ -183,13 +183,13 @@ export default function RegistrationModal({ event, onClose }) {
                 <div className="modal-image-section">
                     <div className="image-cropping-area">
                         <label>Bước 3: Điều chỉnh và Kiểm tra ảnh</label>
-                        <div className="crop-container-16-9">
+                        <div className="crop-container-dynamic">
                             <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
                                 <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
                             </ReactCrop>
                         </div>
                         <button type="button" className="btn-crop-main" onClick={handleCropAndValidate} disabled={isLoading}>
-                            Cắt và Kiểm tra
+                            4. Cắt và Kiểm tra
                         </button>
                     </div>
                     <div className="image-preview-area">

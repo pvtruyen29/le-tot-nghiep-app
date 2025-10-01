@@ -727,11 +727,21 @@ a {
 
 
 /* Phần dưới: Xử lý ảnh */
+
+
+
+/* src/styles/globals.css */
+
+/* --- THAY THẾ TOÀN BỘ ĐOẠN CSS CHO KHU VỰC XỬ LÝ ẢNH --- */
+
+/* Phần dưới: Xử lý ảnh */
 .modal-image-section {
     border-top: 1px solid #e0e0e0;
     padding-top: 2rem;
     display: flex;
     gap: 1.5rem;
+    /* Giúp các cột con có chiều cao bằng nhau */
+    align-items: stretch; 
 }
 
 /* Khu vực cắt ảnh (70%) */
@@ -748,22 +758,33 @@ a {
     color: var(--primary-color);
 }
 
-.crop-container-16-9 {
+/* Container cho vùng cắt ảnh - chiều cao sẽ linh hoạt */
+.crop-container-dynamic {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    flex-grow: 1; /* Cho phép container này co giãn theo chiều cao */
     background-color: #f0f0f0;
     border-radius: 8px;
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
+    min-height: 300px; /* Đặt chiều cao tối thiểu */
 }
-.crop-container-16-9 .ReactCrop__child-wrapper {
-    max-height: 100%;
+
+/* Đảm bảo ReactCrop và ảnh bên trong hiển thị đúng */
+.crop-container-dynamic .ReactCrop,
+.crop-container-dynamic .ReactCrop__child-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
 }
-.crop-container-16-9 img {
+
+.crop-container-dynamic img {
     max-height: 100%;
-    object-fit: contain;
+    max-width: 100%;
+    object-fit: contain; /* Đảm bảo thấy toàn bộ ảnh */
 }
 
 .btn-crop-main {
@@ -771,7 +792,7 @@ a {
     align-self: center;
 }
 
-/* Khu vực xem trước (30%) */
+/* Khu vực xem trước (30%) - không thay đổi nhiều */
 .image-preview-area {
     flex: 1;
     display: flex;
@@ -781,8 +802,9 @@ a {
     background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
-    min-height: 250px;
 }
+
+/* --- (Kết thúc phần thay thế) --- */
 
 .placeholder-preview {
     text-align: center;

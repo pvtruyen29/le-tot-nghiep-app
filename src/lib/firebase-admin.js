@@ -1,21 +1,22 @@
-
 // src/lib/firebase-admin.js
 import admin from 'firebase-admin';
 
-// Kiểm tra xem ứng dụng đã được khởi tạo chưa
+// Chỉ khởi tạo app một lần duy nhất
 if (!admin.apps.length) {
   try {
+    // Đọc "chìa khóa" từ biến môi trường
+    const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_CONFIG);
+
     admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_ADMIN_CONFIG)),
-      // Thêm URL của Storage Bucket vào đây
-      storageBucket: `${JSON.parse(process.env.FIREBASE_ADMIN_CONFIG).project_id}.appspot.com`
+      credential: admin.credential.cert(serviceAccount),
+      // **DÒNG QUAN TRỌNG NHẤT: Chỉ định địa chỉ kho chứa Storage**
+      storageBucket: `${serviceAccount.project_id}.appspot.com`
     });
   } catch (error) {
     console.error('Firebase admin initialization error', error.stack);
   }
 }
 
-// Export cả db và storage
 const db = admin.firestore();
 const storage = admin.storage();
 

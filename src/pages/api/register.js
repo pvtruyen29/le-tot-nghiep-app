@@ -28,53 +28,55 @@ export default async function handler(req, res) {
     const form = new IncomingForm();
     form.parse(req, async (err, fields, files) => {
         if (err) {
-            console.error("[CẢNH BÁO] Lỗi nghiêm trọng khi xử lý form data:", err);
-            return res.status(500).json({ message: 'Lỗi khi xử lý form.' });
+            return res.status(500).json({ message: '[Lỗi Form] Không thể đọc dữ liệu gửi lên.' });
         }
 
         const rawMssv = fields.mssv?.[0];
         const eventId = fields.eventId?.[0];
         const photo = files.photo?.[0];
-        console.log(`[LOG] Dữ liệu nhận được từ form: eventId="${eventId}", mssv="${rawMssv}"`);
 
         if (!rawMssv || !eventId || !photo) {
-            console.error("[CẢNH BÁO] Yêu cầu bị từ chối: Thiếu thông tin cần thiết.");
-            return res.status(400).json({ message: 'Thiếu thông tin cần thiết.' });
+            return res.status(400).json({ message: '[Lỗi Thiếu thông tin] Vui lòng cung cấp đủ MSSV, EventID và ảnh.' });
         }
 
         const mssv = rawMssv.trim().toUpperCase();
+        console.log(`[LOG] Dữ liệu nhận được: eventId="${eventId}", mssv="${mssv}"`);
         
         try {
-            console.log(`[LOG] Bắt đầu kiểm tra sinh viên. Đang tìm kiếm document ID: "${eventId}_${mssv}"`);
+            // --- LOGIC KIỂM TRA MỚI THEO CẤU TRÚC SUBCOLLECTION ---
+            console.log(`[LOG] Bắt đầu kiểm tra MSSV theo cấu trúc mới...`);
+            console.log(`[LOG] Đường dẫn truy vấn: events/${eventId}/eligibleStudents/${mssv}`);
+
+            // 1. Lấy tham chiếu trực tiếp đến document sinh viên trong subcollection
+            const studentRef = db.collection('events').doc(eventId).collection('eligibleStudents').doc(mssv);
+            const studentDoc = await studentRef.get();
+
+            // 2. Kiểm tra xem document sinh viên có tồn tại hay không
+            if (!studentDoc.exists) {
+                console.error(`[CẢNH BÁO] Không tìm thấy document "${mssv}" trong subcollection của sự kiện "${eventId}".`);
+                return res.status(404).json({ message: `[Lỗi Dữ liệu] MSSV "${mssv}" không có trong danh sách đủ điều kiện của sự kiện này.` });
+            }
+            console.log(`[LOG] Đã tìm thấy sinh viên trong subcollection của sự kiện.`);
             
+            // Lấy dữ liệu sinh viên để dùng cho các bước sau
+            const studentData = studentDoc.data();
+
+            // 3. (Tùy chọn) Kiểm tra chéo email nếu có
             const usernameFromEmail = loggedInEmail.split('@')[0];
             if (!usernameFromEmail.toUpperCase().includes(mssv)) {
-                 console.error(`[CẢNH BÁO] Email không khớp MSSV. Email: ${loggedInEmail}, MSSV: ${mssv}`);
                  return res.status(403).json({ message: `[Lỗi Quyền] Email bạn đang dùng (${loggedInEmail}) không khớp với MSSV (${mssv}).` });
             }
-            console.log(`[LOG] Email đã khớp với MSSV.`);
 
-            const eligibleStudentRef = db.collection('eligibleStudents').doc(`${eventId}_${mssv}`);
-            const studentDoc = await eligibleStudentRef.get();
-
-            if (!studentDoc.exists) {
-                console.error(`[CẢNH BÁO] Không tìm thấy sinh viên với document ID: "${eventId}_${mssv}"`);
-                return res.status(404).json({ message: `MSSV "${mssv}" không có trong danh sách đủ điều kiện của sự kiện này.` });
-            }
-            console.log(`[LOG] Đã tìm thấy sinh viên trong danh sách.`);
-
-            // ... các bước còn lại giữ nguyên ...
-            const studentData = studentDoc.data();
-            if (studentData.email && studentData.email !== loggedInEmail) {
-                return res.status(403).json({ message: `Bạn không có quyền đăng ký cho MSSV này. Vui lòng đăng nhập đúng tài khoản email (${studentData.email}) đã được cung cấp.` });
-            }
-
+            // --- CÁC BƯỚC CÒN LẠI GIỮ NGUYÊN ---
+            
+            // Kiểm tra trùng lặp đăng ký (trong một collection registrations riêng)
             const registrationRef = db.collection('registrations').doc(`${eventId}_${mssv}`);
             const registrationDoc = await registrationRef.get();
             if (registrationDoc.exists) {
-                return res.status(409).json({ message: 'Bạn đã đăng ký tham dự sự kiện này rồi.' });
+                return res.status(409).json({ message: '[Lỗi Trùng lặp] Bạn đã đăng ký sự kiện này rồi.' });
             }
 
+            // Tải ảnh lên và lưu thông tin
             const bucket = storage.bucket();
             const destination = `registrations/${eventId}/${mssv}.jpg`;
             await bucket.upload(photo.filepath, { destination });
@@ -83,18 +85,20 @@ export default async function handler(req, res) {
             const registrationData = { ...studentData, eventId, mssv, photoURL, registeredAt: new Date() };
             await registrationRef.set(registrationData);
 
+            // Cập nhật số lượng
             const eventRef = db.collection('events').doc(eventId);
             const eventDoc = await eventRef.get();
             if (eventDoc.exists) {
                 const currentCount = eventDoc.data().registeredCount || 0;
                 await eventRef.update({ registeredCount: currentCount + 1 });
             }
-            
+
+            console.log("--- KẾT THÚC YÊU CẦU ĐĂNG KÝ THÀNH CÔNG ---\n");
             res.status(200).json({ message: 'Đăng ký thành công!' });
 
         } catch (error) {
-            console.error('[CẢNH BÁO] Lỗi không xác định trong khối try-catch:', error);
-            res.status(500).json({ message: 'Lỗi từ server, vui lòng thử lại.' });
+            console.error('[API Lỗi Nghiêm trọng]', error);
+            res.status(500).json({ message: '[Lỗi Server] Có lỗi xảy ra ở phía máy chủ, vui lòng thử lại sau.' });
         }
     });
 }

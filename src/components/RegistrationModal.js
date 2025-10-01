@@ -182,15 +182,16 @@ export default function RegistrationModal({ event, onClose }) {
             {imgSrc && (
                 <div className="modal-image-section">
                     <div className="image-cropping-area">
-                        <label>Bước 3: Điều chỉnh và Kiểm tra ảnh</label>
-                        <div className="crop-container-dynamic">
+                        <label>Bước 3: Điều chỉnh ảnh</label>
+                        <div className="crop-container-16-9">
                             <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
                                 <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
                             </ReactCrop>
+                            {/* --- NÚT ĐÃ ĐƯỢC DỜI VÀO TRONG --- */}
+                            <button type="button" className="btn-crop-overlay" onClick={handleCropAndValidate} disabled={isLoading}>
+                                4. Cắt và Kiểm tra
+                            </button>
                         </div>
-                        <button type="button" className="btn-crop-main" onClick={handleCropAndValidate} disabled={isLoading}>
-                            4. Cắt và Kiểm tra
-                        </button>
                     </div>
                     <div className="image-preview-area">
                         {croppedFileUrl ? (

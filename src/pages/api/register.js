@@ -46,17 +46,13 @@ export default async function handler(req, res) {
                  return res.status(403).json({ message: `[Lỗi Quyền] Email bạn đang dùng (${loggedInEmail}) không khớp với MSSV (${mssv}) mà bạn muốn đăng ký.` });
             }
 
-            // --- BƯỚC 3: TÁCH RIÊNG ĐIỀU KIỆN KIỂM TRA ---
-
-            // 3.1: Kiểm tra xem SỰ KIỆN có tồn tại không?
+            // --- BƯỚC 3: KIỂM TRA SỰ KIỆN VÀ SINH VIÊN ---
             const eventRef = db.collection('events').doc(eventId);
             const eventDoc = await eventRef.get();
             if (!eventDoc.exists) {
-                console.error(`[API Lỗi] Không tìm thấy sự kiện với EventID: "${eventId}"`);
                 return res.status(404).json({ message: `[Lỗi Dữ liệu] Sự kiện bạn đang đăng ký không tồn tại hoặc đã bị xóa.` });
             }
 
-            // 3.2: Kiểm tra xem MSSV có trong danh sách của sự kiện đó không?
             const eligibleStudentsRef = db.collection('eligibleStudents');
             const snapshot = await eligibleStudentsRef
                 .where('eventId', '==', eventId)
@@ -65,7 +61,6 @@ export default async function handler(req, res) {
                 .get();
 
             if (snapshot.empty) {
-                console.error(`[API Lỗi] Không tìm thấy sinh viên có mssv="${mssv}" cho eventId="${eventId}"`);
                 return res.status(404).json({ message: `[Lỗi Dữ liệu] MSSV "${mssv}" không có trong danh sách đủ điều kiện của sự kiện này.` });
             }
 
@@ -88,7 +83,6 @@ export default async function handler(req, res) {
             const registrationData = { ...studentData, eventId, photoURL, registeredAt: new Date() };
             await registrationRef.set(registrationData);
 
-            // Cập nhật số lượng
             const currentCount = eventDoc.data().registeredCount || 0;
             await eventRef.update({ registeredCount: currentCount + 1 });
 

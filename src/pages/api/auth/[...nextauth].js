@@ -12,22 +12,14 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async signIn({ account, profile }) {
-      // Kiểm tra nếu đăng nhập bằng Google và có email
       if (account.provider === "google" && profile.email) {
-        
-        // --- LOGIC MỞ RỘNG ---
-        // Lấy phần tên miền từ email (ví dụ: "student.ctu.edu.vn")
         const emailDomain = profile.email.split('@')[1];
-
-        // Cho phép đăng nhập nếu tên miền là "ctu.edu.vn" hoặc kết thúc bằng ".ctu.edu.vn"
         if (emailDomain === "ctu.edu.vn" || emailDomain.endsWith(".ctu.edu.vn")) {
           return true; // Cho phép đăng nhập
         } else {
-          // Nếu không phải email của CTU, chuyển hướng về trang lỗi
           return '/auth-error?error=InvalidDomain';
         }
       }
-      // Chặn các trường hợp khác
       return false;
     },
   },

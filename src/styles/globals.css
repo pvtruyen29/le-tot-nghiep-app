@@ -758,7 +758,7 @@ a {
 /* Container cho vùng cắt ảnh - Thêm position: relative */
 .crop-container-16-9 {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    max-height:450px;
     background-color: #f0f0f0;
     border-radius: 8px;
     overflow: hidden;
@@ -775,7 +775,7 @@ a {
 .crop-container-16-9 img {
     width: 100%;
     height:100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 /* Nút Cắt và Kiểm tra nằm trên ảnh - Xóa bỏ CSS cũ */

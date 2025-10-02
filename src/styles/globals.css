@@ -756,16 +756,18 @@ a {
 }
 
 /* Container cho vùng cắt ảnh - Thêm position: relative */
+/* Container cho vùng cắt ảnh - ĐÃ SỬA LỖI */
 .crop-container-16-9 {
     width: 100%;
-    max-height:450px;
+    /* Xóa bỏ aspect-ratio để khung tự co giãn */
+    max-height: 450px; /* Thêm chiều cao tối đa để không phá vỡ layout */
     background-color: #f0f0f0;
     border-radius: 8px;
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative; /* Cần thiết để định vị nút con */
+    position: relative; 
 }
 
 .crop-container-16-9 .ReactCrop__child-wrapper {

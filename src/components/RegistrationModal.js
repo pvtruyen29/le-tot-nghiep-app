@@ -145,7 +145,7 @@ export default function RegistrationModal({ event, onClose }) {
 
   return (
     <div className="modal-backdrop">
-      <div className={"modal-content modal-large-wide" ${isZoomed ? 'zoomed' : ''}`}>
+      <div className={'modal-content modal-large-wide' ${isZoomed ? 'zoomed' : ''}`}>
         {isLoading && <div className="loading-overlay"><div className="loader"></div></div>}
         <form onSubmit={handleSubmit} className="form-box">
             <h2 className="modal-title" style={{textAlign: 'center', marginBottom: '2rem'}}>{event.title}</h2>

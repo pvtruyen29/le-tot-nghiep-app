@@ -4,50 +4,35 @@ import { useSession } from 'next-auth/react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-// Hàm cắt ảnh đã được kiểm tra ổn định
 function getCroppedImg(image, crop, fileName) {
   const canvas = document.createElement('canvas');
-  const pixelRatio = window.devicePixelRatio;
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
-  
+  canvas.width = crop.width;
+  canvas.height = crop.height;
   const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    throw new Error('Could not get canvas context');
-  }
-
-  const cropWidth = crop.width * scaleX;
-  const cropHeight = crop.height * scaleY;
-
-  canvas.width = Math.floor(cropWidth * pixelRatio);
-  canvas.height = Math.floor(cropHeight * pixelRatio);
-
-  ctx.scale(pixelRatio, pixelRatio);
+  const pixelRatio = window.devicePixelRatio;
+  canvas.width = crop.width * pixelRatio;
+  canvas.height = crop.height * pixelRatio;
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   ctx.imageSmoothingQuality = 'high';
-
-  const sourceX = crop.x * scaleX;
-  const sourceY = crop.y * scaleY;
-
   ctx.drawImage(
     image,
-    sourceX,
-    sourceY,
-    cropWidth,
-    cropHeight,
-    0,
-    0,
-    cropWidth,
-    cropHeight
+    crop.x * scaleX,
+    crop.y * scaleY,
+    crop.width * scaleX,
+    crop.height * scaleY,
+    0, 0,
+    crop.width,
+    crop.height
   );
-
   return new Promise((resolve) => {
     canvas.toBlob(blob => {
       if (!blob) { console.error('Canvas is empty'); return; }
       resolve(new File([blob], fileName, { type: 'image/jpeg' }));
-    }, 'image/jpeg', 0.6);
+    }, 'image/jpeg', 0.95);
   });
 }
-
 
 export default function RegistrationModal({ event, onClose }) {
   const { data: session } = useSession();
@@ -61,6 +46,7 @@ export default function RegistrationModal({ event, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isInfoValid, setIsInfoValid] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const onSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -68,6 +54,7 @@ export default function RegistrationModal({ event, onClose }) {
       setCroppedFileUrl('');
       setIsInfoValid(false);
       setMessage('');
+      setIsZoomed(false);
       const reader = new FileReader();
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
       reader.readAsDataURL(e.target.files[0]);
@@ -77,8 +64,7 @@ export default function RegistrationModal({ event, onClose }) {
   const onImageLoad = (e) => {
     imgRef.current = e.currentTarget;
     const { width, height } = e.currentTarget;
-    // --- THAY ĐỔI 1: Tỷ lệ mặc định là 3:4 (chân dung) ---
-    const newCrop = centerCrop(makeAspectCrop({ unit: '%', width: 50 }, 3 / 4, width, height), width, height);
+    const newCrop = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, 3 / 4, width, height), width, height);
     setCrop(newCrop);
   };
 
@@ -149,7 +135,7 @@ export default function RegistrationModal({ event, onClose }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-content modal-large-wide">
+      <div className={`modal-content modal-large-wide ${isZoomed ? 'zoomed' : ''}`}>
         {isLoading && <div className="loading-overlay"><div className="loader"></div></div>}
         <form onSubmit={handleSubmit} className="form-box">
             <h2 className="modal-title" style={{textAlign: 'center', marginBottom: '2rem'}}>{event.title}</h2>
@@ -186,20 +172,32 @@ export default function RegistrationModal({ event, onClose }) {
             {imgSrc && (
                 <div className="modal-image-section">
                     <div className="image-cropping-area">
-                        <label>Bước 3: Điều chỉnh ảnh</label>
+                        <div className="cropping-header">
+                           <label>Bước 3: Điều chỉnh ảnh</label>
+                           <div className="cropping-header-actions">
+                                <button type="button" className="btn-crop-main" onClick={handleCropAndValidate} disabled={isLoading}>
+                                    4. Cắt và Kiểm tra
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn-zoom" 
+                                    onClick={() => setIsZoomed(!isZoomed)}
+                                >
+                                    {isZoomed ? 'Thu nhỏ' : 'Phóng to'}
+                                </button>
+                           </div>
+                        </div>
                         <div className="crop-container">
-                            {/* --- THAY ĐỔI 2: Ép tỷ lệ khung chọn là 3:4 --- */}
                             <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
                                 <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
                             </ReactCrop>
                         </div>
-                        <button type="button" className="btn-crop-main" onClick={handleCropAndValidate} disabled={isLoading}>
-                            4. Cắt và Kiểm tra
-                        </button>
                     </div>
                     <div className="image-preview-area">
                         {message && 
-                            <p className={`message message-inline ${message.includes('Lỗi') ? 'error' : 'success'}`}>
+                            <p 
+                                className={`message message-inline ${message.includes('Lỗi') ? 'error' : 'success'}`}
+                            >
                                 {message}
                             </p>
                         }
@@ -208,8 +206,7 @@ export default function RegistrationModal({ event, onClose }) {
                             <div className="preview-container">
                                 <p>Xem trước ảnh đã cắt:</p>
                                 <div className="preview-frame">
-                                    {/* --- THAY ĐỔI 3: Khung xem trước cũng có tỷ lệ 3:4 --- */}
-                                    <img src={croppedFileUrl} alt="Ảnh đã cắt" style={{ aspectRatio: '3 / 4' }} />
+                                    <img src={croppedFileUrl} alt="Ảnh đã cắt" />
                                 </div>
                             </div>
                         ) : (

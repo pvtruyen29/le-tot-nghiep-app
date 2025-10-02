@@ -755,30 +755,41 @@ a {
     color: var(--primary-color);
 }
 
-/* Container cho vùng cắt ảnh - Thêm position: relative */
-/* Container cho vùng cắt ảnh - ĐÃ SỬA LỖI */
+/* src/styles/globals.css */
+
+/* --- THAY THẾ TOÀN BỘ CÁC ĐOẠN CSS DƯỚI ĐÂY --- */
+
+/* Container cho vùng cắt ảnh - Đã sửa lỗi để linh hoạt hơn */
 .crop-container-16-9 {
     width: 100%;
-    /* Xóa bỏ aspect-ratio để khung tự co giãn */
-    max-height: 450px; /* Thêm chiều cao tối đa để không phá vỡ layout */
+    height: 450px; /* Dùng height cố định để ổn định layout */
     background-color: #f0f0f0;
     border-radius: 8px;
-    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative; 
+    position: relative;
+    overflow: hidden; 
 }
 
+/* Quan trọng: Style cho wrapper của ReactCrop */
 .crop-container-16-9 .ReactCrop__child-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
     max-height: 100%;
 }
 
+/* Đảm bảo ảnh không bị cắt xén và luôn nằm trọn trong box */
 .crop-container-16-9 img {
     max-width: 100%;
-    max-height:100%;
-    object-fit: contain;
+    max-height: 100%;
+    object-fit: contain; /* Đây là thuộc tính quan trọng nhất */
 }
+
+
+/* --- (Kết thúc phần thay thế) --- */
 
 /* Nút Cắt và Kiểm tra nằm trên ảnh - Xóa bỏ CSS cũ */
 

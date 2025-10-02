@@ -46,7 +46,7 @@ export default function RegistrationModal({ event, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isInfoValid, setIsInfoValid] = useState(false);
-  const [isZoomed, setIsZoomed] = useState(false); // Thêm lại state cho chức năng zoom
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const onSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -54,7 +54,7 @@ export default function RegistrationModal({ event, onClose }) {
       setCroppedFileUrl('');
       setIsInfoValid(false);
       setMessage('');
-      setIsZoomed(false); // Reset zoom khi chọn ảnh mới
+      setIsZoomed(false);
       const reader = new FileReader();
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
       reader.readAsDataURL(e.target.files[0]);
@@ -174,24 +174,31 @@ export default function RegistrationModal({ event, onClose }) {
                     <div className="image-cropping-area">
                         <div className="cropping-header">
                            <label>Bước 3: Điều chỉnh ảnh</label>
-                            <button 
-                                type="button" 
-                                className="btn-zoom" 
-                                onClick={() => setIsZoomed(!isZoomed)}
-                            >
-                                {isZoomed ? 'Thu nhỏ' : 'Phóng to'}
-                            </button>
+                           <div className="cropping-header-actions">
+                               {/* NÚT 4 ĐÃ ĐƯỢC DỜI LÊN ĐÂY */}
+                                <button type="button" className="btn-crop-main" onClick={handleCropAndValidate} disabled={isLoading}>
+                                    4. Cắt và Kiểm tra
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn-zoom" 
+                                    onClick={() => setIsZoomed(!isZoomed)}
+                                >
+                                    {isZoomed ? 'Thu nhỏ' : 'Phóng to'}
+                                </button>
+                           </div>
                         </div>
-                        <div className="crop-container-16-9">
+                        <div className="crop-container">
                             <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
                                 <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
                             </ReactCrop>
-                            <button type="button" className="btn-crop-overlay" onClick={handleCropAndValidate} disabled={isLoading}>
-                                4. Cắt và Kiểm tra
-                            </button>
                         </div>
                     </div>
                     <div className="image-preview-area">
+                        {/* THÔNG BÁO ĐÃ ĐƯỢC DỜI LÊN TRÊN */}
+                        {message && <p className="message message-inline">{message}</p>}
+                        
+                        {/* ẢNH PREVIEW NẰM Ở DƯỚI */}
                         {croppedFileUrl ? (
                             <div className="preview-container">
                                 <p>Xem trước ảnh đã cắt:</p>
@@ -204,7 +211,6 @@ export default function RegistrationModal({ event, onClose }) {
                                 <p>Ảnh sau khi cắt sẽ hiện ở đây.</p>
                             </div>
                         )}
-                        {message && <p className="message message-inline">{message}</p>}
                     </div>
                 </div>
             )}

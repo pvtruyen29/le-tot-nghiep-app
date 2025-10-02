@@ -1,262 +1,424 @@
 /* src/styles/globals.css */
-@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
+/* --- BIẾN MÀU VÀ THIẾT LẬP CƠ BẢN --- */
 :root {
-  --primary-color: #005a9e;
-  --secondary-color: #f4f6f8;
-  --text-color: #34495e;
-  --heading-color: #2c3e50;
-  --border-radius: 12px;
-  --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  --primary-color: #004a99; /* Xanh đậm CTU */
+  --secondary-color: #007bff; /* Xanh dương sáng hơn */
+  --accent-color: #ffc107; /* Vàng */
+  --text-color: #333;
+  --light-gray: #f4f4f4;
+  --border-color: #ddd;
+  --white-color: #fff;
+  --danger-color: #dc3545;
+  --success-color: #28a745;
 }
 
-html, body {
+html,
+body {
   padding: 0;
   margin: 0;
-  font-family: 'Public Sans', sans-serif;
-  background-color: var(--secondary-color);
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, Segoe UI, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  background-color: #f9fafb;
   color: var(--text-color);
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 .container {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0 1rem;
 }
 
-/* --- KHU VỰC BANNER TRANG CHỦ --- */
+/* --- BANNER CHÍNH --- */
 .hero-banner {
-  background: white;
-  padding: 2rem 2.5rem;
-  margin-bottom: 3rem;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  text-align: center; /* Để logo và tiêu đề ra giữa */
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: var(--white-color);
+  text-align: center;
+  padding: 3rem 1rem;
+  border-radius: 0 0 16px 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 74, 153, 0.2);
 }
 
-/* CHỈNH SỬA KÍCH THƯỚC LOGO TẠI ĐÂY */
 .hero-logo {
-  height: 200px; /* Chiều cao nhỏ hơn */
-  width: auto;
-  margin-bottom: 0.8rem; /* Giảm khoảng cách dưới logo */
-}
-
-.hero-banner h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin: 0;
-}
-
-/* --- GIAO DIỆN DANH SÁCH SỰ KIỆN CHI TIẾT --- */
-.event-grid-detailed {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2.5rem;
-}
-
-.event-card-detailed {
-  background: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  display: flex;
-  overflow: hidden;
-  transition: box-shadow 0.3s ease;
-}
-
-.event-card-detailed:hover {
-  box-shadow: 0 12px 24px rgba(0,0,0,0.12);
-}
-.event-card-detailed .event-card-image {
-  width: 300px;
-  flex-shrink: 0;
-  object-fit: cover;
-}
-
-.event-card-detailed .event-info {
-  padding: 1.5rem 2rem;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.event-card-detailed h3 {
-  margin-top: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  border-bottom: 1px solid #eee;
-  padding-bottom: 1rem;
+  width: 80px;
+  height: auto;
   margin-bottom: 1rem;
 }
 
-
-.event-card-detailed .info-item {
-  margin: 0.4rem 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
+.hero-banner h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
 }
 
-.event-card-detailed .info-item strong {
-  color: var(--heading-color);
+/* --- KHỐI ĐĂNG NHẬP/ĐĂNG XUẤT --- */
+.login-status {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
-
-.event-card-detailed .notes {
-  font-style: italic;
-  color: #555;
-  margin-top: 1rem;
+.login-status p {
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
 }
-.event-card-detailed .register-btn {
-  margin-top: auto; /* Đẩy nút xuống dưới cùng */
-  align-self: flex-end; /* Căn nút sang phải */
-  width: auto;
-  padding: 10px 30px;
-  background-color: var(--primary-color);
-  color: white;
+.login-btn, .logout-btn {
   border: none;
+  padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1rem;
   font-weight: 700;
-  transition: background-color 0.2s;
+  transition: transform 0.2s;
 }
-.event-card-detailed .register-btn:hover {
-  background-color: #00457c;
+.login-btn:hover, .logout-btn:hover {
+  transform: translateY(-2px);
+}
+.login-btn {
+  background-color: var(--white-color);
+  color: var(--primary-color);
+}
+.logout-btn {
+  background-color: var(--danger-color);
+  color: white;
 }
 
-/* --- GIAO DIỆN MODAL CHUNG --- */
+/* --- NÚT XEM LỊCH TOÀN TRƯỜNG --- */
+.schedule-link-container {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+.schedule-link-button {
+  display: inline-block;
+  background-color: var(--success-color);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: all 0.2s ease-in-out;
+}
+.schedule-link-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* --- DANH SÁCH SỰ KIỆN (LAYOUT MỚI) --- */
+.event-grid-detailed {
+  display: grid;
+  gap: 2rem;
+}
+
+.event-card-detailed {
+  background-color: var(--white-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: row;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.event-card-detailed:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.event-card-image-wrapper {
+  position: relative;
+  flex: 0 0 300px;
+}
+.event-card-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* CSS CHO ICON NGÀY THÁNG */
+.event-card-date {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background-color: var(--white-color);
+  color: var(--text-color);
+  border-radius: 8px;
+  width: 60px;
+  text-align: center;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+.event-card-date .month {
+  background-color: var(--danger-color);
+  color: white;
+  padding: 4px 0;
+  border-radius: 8px 8px 0 0;
+  font-size: 0.8rem;
+}
+.event-card-date .day {
+  padding: 8px 0;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.event-info {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+.event-info h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+.info-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.info-item {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+.info-item strong {
+  color: var(--text-color);
+}
+.notes {
+  background-color: var(--light-gray);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+.register-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: auto;
+  transition: background-color 0.2s;
+}
+.register-btn:hover {
+  background-color: var(--primary-color);
+}
+
+/* --- MODAL (POPUP) --- */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 1rem;
 }
-
 .modal-content {
-  background: white;
-  padding: 2.5rem;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  width: 90%;
-  max-width: 600px;
+  background-color: var(--white-color);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: 100%;
   position: relative;
-  max-height: 90vh; /* Giới hạn chiều cao */
-  overflow-y: auto; /* Cho phép cuộn nếu nội dung quá dài */
+  overflow-y: auto;
+  max-height: 95vh;
 }
-
+.modal-large {
+  max-width: 1000px;
+}
 .modal-title {
   color: var(--primary-color);
-  font-size: 1.8rem;
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  text-align: center;
+  margin: 0 0 1rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
 }
-
 .form-box {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    background-color: #fcfcfc;
+  padding: 1.5rem;
 }
-
-.box-title {
-    color: var(--heading-color);
-    font-size: 1.3rem;
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-
 .form-group {
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.5rem;
 }
-
 .form-group label {
   display: block;
-  margin-bottom: 0.6rem;
   font-weight: 500;
-  color: var(--heading-color);
-  font-size: 1rem;
+  margin-bottom: 0.5rem;
 }
-
-.form-group input[type="text"],
-.form-group input[type="datetime-local"],
-.form-group textarea {
-  width: calc(100% - 20px);
+.form-group input {
+  width: 100%;
   padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-family: 'Public Sans', sans-serif;
-}
-
-.form-group input[type="file"] {
-  padding: 8px 0;
-}
-
-.form-group textarea {
-  min-height: 80px;
-  resize: vertical;
-}
-
-.message {
-  padding: 1rem;
-  background-color: #ffe0b2;
-  border: 1px solid #ff9800;
-  color: #e65100;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  margin-top: 1.5rem;
-  text-align: center;
-  font-weight: 500;
+  font-size: 1rem;
 }
-
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
 }
-
-.modal-actions button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 700;
-  transition: background-color 0.2s;
-}
-
-.modal-actions button[type="submit"] {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.modal-actions button[type="submit"]:hover:not(:disabled) {
-  background-color: #00457c;
-}
-
-.modal-actions .btn-secondary {
+.btn-secondary {
   background-color: #6c757d;
   color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.modal-actions .btn-secondary:hover:not(:disabled) {
-  background-color: #5a6268;
+/* --- BỐ CỤC 2 CỘT TRONG POPUP ĐĂNG KÝ (SỬA LỖI) --- */
+.modal-grid-register {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+}
+.modal-col-right {
+  display: flex;
+  flex-direction: column;
 }
 
-.modal-actions button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* KHUNG ẢNH CỐ ĐỊNH */
+.crop-container-fixed {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.crop-container-fixed .ReactCrop {
+  max-height: 400px;
+}
+.crop-container-fixed .ReactCrop img {
+  max-height: 400px;
+  object-fit: contain;
+}
+.crop-container-fixed > label {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.crop-container-fixed .btn-crop-main {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
 }
 
-/* Loading overlay */
+/* Nút Cắt ảnh nổi bật */
+.btn-crop-main {
+  padding: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--accent-color);
+  color: var(--text-color);
+  transition: background-color 0.2s;
+}
+.btn-crop-main:hover {
+  background-color: #ffb300;
+}
+
+/* Placeholder khi chưa chọn ảnh */
+.placeholder-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  color: #aaa;
+  font-size: 1rem;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+/* Khung xem trước ảnh */
+.preview-container {
+  margin-top: 1rem;
+}
+.preview-frame {
+  width: 150px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.preview-frame img {
+  width: 100%;
+  display: block;
+}
+
+/* HƯỚNG DẪN ẢNH */
+.photo-guidelines {
+  background-color: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.photo-guidelines p {
+  margin: 0 0 0.5rem 0;
+  color: #d46b08;
+}
+.photo-guidelines ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #595959;
+}
+.photo-guidelines li {
+  margin-bottom: 0.3rem;
+}
+
+/* THÔNG BÁO */
+.message-fullwidth {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  margin-top: 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid;
+}
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -267,10 +429,9 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1001; /* Đảm bảo nó nằm trên modal content */
-  border-radius: var(--border-radius);
+  z-index: 1001;
+  border-radius: 16px;
 }
-
 .loader {
   border: 5px solid #f3f3f3;
   border-top: 5px solid var(--primary-color);
@@ -279,248 +440,499 @@ html, body {
   height: 40px;
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
 
-/* Responsive adjustments */
+/* --- RESPONSIVE --- */
+@media (max-width: 900px) {
+  .modal-grid-register {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-
-  .hero-banner {
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
   .hero-banner h1 {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
-
   .event-card-detailed {
-    flex-direction: column; /* Xếp ảnh và thông tin theo chiều dọc trên mobile */
+    flex-direction: column;
   }
-
-  .event-card-detailed .event-card-image {
+  .event-card-image-wrapper {
+    flex-basis: auto;
     width: 100%;
-    height: 200px; /* Điều chỉnh chiều cao ảnh trên mobile */
-    max-height: unset;
-  }
-
-  .event-card-detailed .event-info {
-    padding: 1.2rem;
-  }
-
-  .event-card-detailed h3 {
-    font-size: 1.3rem;
-  }
-
-  .event-card-detailed .register-btn {
-    align-self: stretch; /* Nút chiếm toàn bộ chiều rộng */
-    margin-left: 0;
-  }
-
-  .modal-content {
-    padding: 1.5rem;
-  }
-
-  .modal-title {
-    font-size: 1.5rem;
+    padding-top: 56.25%;
   }
 }
-/* src/styles/globals.css */
-
-/* ... Dán đoạn này vào cuối file ... */
-
-.crop-container {
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.ReactCrop__image {
-  max-height: 400px;
-}
-
-.btn-crop {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 700;
-  margin-top: 1rem;
-}
-
-.preview-container {
-  margin-top: 1rem;
-  text-align: center;
-}
-
-.preview-container p {
-  font-weight: 500;
-}
-
-.preview-container img {
-  max-width: 150px;
-  border-radius: 8px;
-  border: 2px solid #eee;
-}
-/* src/styles/globals.css */
-
-/* ... Dán đoạn này vào cuối file ... */
-
-/* --- CSS cho Bố cục 2 cột trong Modal --- */
-
-.modal-large {
-  max-width: 900px; /* Tăng chiều rộng tối đa của modal */
-}
-
-.modal-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Chia thành 2 cột bằng nhau */
-  gap: 2.5rem; /* Khoảng cách giữa 2 cột */
-}
-
-.modal-col-info .modal-title {
-  text-align: left; /* Căn lề trái cho tiêu đề ở cột thông tin */
-  font-size: 1.8rem;
-}
-
-.modal-col-action .form-box {
-  padding: 0;
-  border: none;
-  background-color: transparent;
-}
-
-/* SỬA LỖI: Giới hạn khung xem trước */
-.preview-frame {
-  width: 150px;
-  height: 150px;
-  border: 2px dashed #ccc;
-  padding: 5px;
-  margin: 0.5rem auto 0 auto;
+/* --- CSS CHO TRANG LỖI ĐĂNG NHẬP --- */
+.auth-error-container {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.preview-frame img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-/* Responsive cho màn hình nhỏ */
-@media (max-width: 800px) {
-  .modal-grid {
-    grid-template-columns: 1fr; /* Chuyển về 1 cột trên mobile */
-    gap: 1.5rem;
-  }
-  .modal-col-info .modal-title {
-    text-align: center; /* Căn giữa lại trên mobile */
-  }
-}
-/* src/styles/globals.css */
-
-/* ... Dán đoạn này vào cuối file ... */
-
-/* --- CSS cho Bố cục 2 cột trong Modal --- */
-
-.modal-large {
-  max-width: 950px; /* Tăng chiều rộng tối đa của modal */
-}
-
-.modal-grid {
-  display: grid;
-  grid-template-columns: 400px 1fr; /* Cột trái cố định, cột phải co giãn */
-  gap: 2.5rem;
-}
-
-.modal-col-info .modal-title {
-  text-align: left;
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-}
-
-.modal-col-info .info-box, .modal-col-info .form-box {
-  margin-top: 0;
-  padding: 1.5rem;
-}
-
-.modal-col-action {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: #f9fafb;
-  border-radius: var(--border-radius);
+  min-height: 100vh;
+  background-color: #f4f6f8;
   padding: 1rem;
 }
 
-.placeholder-image {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 400px;
-  border: 2px dashed #ccc;
-  border-radius: 8px;
-  color: #aaa;
-  font-size: 1.2rem;
-}
-
-.modal-col-action .crop-container,
-.modal-col-action .preview-container {
-  width: 100%;
-}
-
-.modal-col-action .crop-container label {
-  display: block;
+.auth-error-box {
+  background-color: white;
+  padding: 2rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   text-align: center;
-  font-weight: 500;
-  margin-bottom: 1rem;
+  max-width: 500px;
 }
 
-.preview-frame {
-  width: 210px; /* 210px x 280px là tỷ lệ 3x4 */
-  height: 280px;
-  border: 2px dashed #ccc;
-  padding: 5px;
-  margin: 0.5rem auto 0 auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.auth-error-box h1 {
+  color: #dc3545; /* Màu đỏ */
+  font-size: 1.8rem;
+  margin: 0 0 1rem 0;
 }
 
-.message-right {
-  width: 100%;
-  box-sizing: border-box; /* Đảm bảo padding không làm vỡ layout */
+.auth-error-box p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.auth-error-button {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.auth-error-button:hover {
+  background-color: #00457c;
+}
+/* src/styles/globals.css */
+
+/* --- BANNER CHÍNH --- */
+.hero-banner {
+    width: 100%;
+    padding: 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #005691, #00407a);
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    margin-bottom: 2rem;
+    position: relative; /* Cần cho việc định vị các nút */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hero-banner h1 {
+    font-size: 2rem; /* Làm nhỏ lại tiêu đề */
+    margin-top: 1rem;
+    max-width: 600px;
+}
+
+.hero-logo {
+    width: 70px; /* Làm nhỏ lại logo */
+    height: 70px;
+}
+
+/* Container cho 2 nút ở góc banner */
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    position: absolute;
+    top: 1rem;
+    left: 0;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
+}
+
+.schedule-link-container {
+    align-self: flex-start;
+}
+
+.login-status {
+    align-self: flex-start;
+}
+
+/* Style chung cho nút trên header */
+.header-action-btn {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.header-action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-info span {
+    font-weight: 600;
+}
+
+
+/* --- BOX SỰ KIỆN --- */
+.event-card-detailed {
+    display: flex;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.event-card-detailed:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.event-card-image-wrapper {
+    flex-shrink: 0;
+}
+
+.event-card-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.event-card-content h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+/* Lưới thông tin 2 cột */
+.event-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.info-col p {
+    margin: 0.5rem 0;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+/* Ghi chú */
+.event-notes {
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+    padding: 0.75rem;
+    margin-top: auto; /* Đẩy xuống dưới */
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    border-radius: 4px;
+}
+
+/* Container cho nút đăng ký */
+.event-card-actions {
+    margin-top: auto; /* Đẩy nút xuống góc */
+    align-self: flex-end; /* Căn lề phải */
+}
+
+/* Nút đăng ký nhỏ */
+.register-btn-small {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.register-btn-small:hover {
+    background-color: #00457c;
 }
 
 /* Responsive cho màn hình nhỏ */
-@media (max-width: 900px) {
-  .modal-grid {
-    grid-template-columns: 1fr; /* Chuyển về 1 cột trên mobile */
-    gap: 1.5rem;
-  }
-  .modal-col-info .modal-title {
-    text-align: center;
-  }
-  .modal-col-action {
-    min-height: 300px; /* Chiều cao tối thiểu cho khung ảnh trên mobile */
-  }
+@media (max-width: 768px) {
+    .hero-banner h1 {
+        font-size: 1.5rem;
+    }
+    .header-actions {
+        position: static;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .event-card-detailed {
+        flex-direction: column;
+    }
+    .event-info-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
 }
-/* SỬA LỖI: CSS cho layout 2 cột */
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Chia thành 2 cột */
-  gap: 0.5rem 2rem; /* Khoảng cách dòng và cột */
+/* src/styles/globals.css */
+
+/* --- POPUP ĐĂNG KÝ GIAO DIỆN MỚI --- */
+
+/* Tăng chiều rộng tối đa của popup */
+.modal-content.modal-large-wide {
+    max-width: 1000px;
+}
+
+/* Phần trên: Nhập liệu và Hướng dẫn */
+.modal-top-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.modal-col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.modal-col-right {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-main-actions {
+    margin-top: auto; /* Đẩy các nút xuống dưới cùng của cột phải */
+    padding-top: 1rem;
+    display: flex;
+    justify-content: flex-end; /* Căn các nút về phía bên phải */
+    gap: 1rem;
+}
+
+
+/* Phần dưới: Xử lý ảnh */
+
+/* src/styles/globals.css */
+
+/* --- THAY THẾ TOÀN BỘ ĐOẠN CSS CHO KHU VỰC XỬ LÝ ẢNH --- */
+
+/* Phần dưới: Xử lý ảnh */
+.modal-image-section {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+/* Khu vực cắt ảnh (70%) */
+.image-cropping-area {
+    flex: 0 0 70%;
+    display: flex;
+    flex-direction: column;
+}
+
+.image-cropping-area > label {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: block;
+    color: var(--primary-color);
+}
+
+/* src/styles/globals.css */
+
+/* --- THAY THẾ TOÀN BỘ CÁC ĐOẠN CSS DƯỚI ĐÂY --- */
+
+/* Container cho vùng cắt ảnh - Đã sửa lỗi để linh hoạt hơn */
+.crop-container-16-9 {
+    width: 100%;
+    height: 600px; /* Dùng height cố định để ổn định layout */
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden; 
+}
+
+/* Quan trọng: Style cho wrapper của ReactCrop */
+.crop-container-16-9 .ReactCrop__child-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Đảm bảo ảnh không bị cắt xén và luôn nằm trọn trong box */
+.crop-container-16-9 img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain; /* Đây là thuộc tính quan trọng nhất */
+}
+
+
+/* --- (Kết thúc phần thay thế) --- */
+
+/* Nút Cắt và Kiểm tra nằm trên ảnh - Xóa bỏ CSS cũ */
+
+.btn-crop-main {
+    margin-top: 1rem;
+    align-self: center;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    
+    /* MÀU MỚI */
+    background-color: #f39c12; /* Màu cam sáng */
+    color: white;
+    
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/* CSS MỚI CHO NÚT NẰM TRÊN ẢNH */
+.btn-crop-overlay {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10; /* Đảm bảo nút luôn nổi lên trên */
+    
+    /* Style để nút nổi bật trên nền ảnh */
+    background-color: rgba(0, 86, 145, 0.8);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    padding: 0.5rem 1.25rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.btn-crop-overlay:hover {
+    background-color: #e67e22;
+    transform: translateX(-50%) scale(1.05);
+}
+
+.btn-crop-overlay:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+
+/* Khu vực xem trước (30%) */
+.image-preview-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 250px;
+}
+
+/* --- (Kết thúc phần thay thế) --- */
+
+
+.placeholder-preview {
+    text-align: center;
+    color: #6c757d;
+}
+
+.message.message-inline {
+    width: 100%;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* --- Responsive cho màn hình nhỏ --- */
+@media (max-width: 992px) {
+    .modal-top-section {
+        grid-template-columns: 1fr;
+    }
+    .modal-image-section {
+        flex-direction: column;
+    }
+    .image-cropping-area {
+        flex-basis: auto;
+    }
+}
+
+/* src/styles/globals.css */
+
+/* --- THÊM VÀO CUỐI FILE --- */
+
+/* Header của khu vực cắt ảnh */
+.cropping-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.cropping-header > label {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.btn-zoom {
+    background: #e9ecef;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-zoom:hover {
+    background: #dee2e6;
+    color: #212529;
+}
+
+/* CSS cho trạng thái Phóng to */
+.modal-content.zoomed {
+    width: 95vw;
+    height: 95vh;
+    max-width: none;
+    max-height: none;
+}
+
+.modal-content.zoomed .modal-top-section,
+.modal-content.zoomed .image-preview-area {
+    display: none; /* Ẩn các phần không cần thiết khi zoom */
+}
+
+.modal-content.zoomed .modal-image-section {
+    height: calc(100% - 100px); /* Chiếm gần hết chiều cao popup */
+    border-top: none;
+    padding-top: 0;
+}
+
+.modal-content.zoomed .image-cropping-area {
+    flex-basis: 100%; /* Chiếm toàn bộ chiều rộng */
+    height: 100%;
 }

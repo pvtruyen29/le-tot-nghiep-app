@@ -46,13 +46,15 @@ export default function RegistrationModal({ event, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isInfoValid, setIsInfoValid] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false); // Thêm lại state cho chức năng zoom
 
   const onSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setCrop(undefined); 
-      setCroppedFileUrl(''); 
-      setIsInfoValid(false); 
+      setCrop(undefined);
+      setCroppedFileUrl('');
+      setIsInfoValid(false);
       setMessage('');
+      setIsZoomed(false); // Reset zoom khi chọn ảnh mới
       const reader = new FileReader();
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
       reader.readAsDataURL(e.target.files[0]);
@@ -67,25 +69,23 @@ export default function RegistrationModal({ event, onClose }) {
   };
 
   const handleCropAndValidate = async () => {
-    setIsLoading(true); 
-    setMessage("Đang kiểm tra..."); 
+    setIsLoading(true);
+    setMessage("Đang kiểm tra...");
     setIsInfoValid(false);
-    
     if (!mssv.trim() || !completedCrop || !imgRef.current) {
-      setMessage('Vui lòng nhập MSSV và chọn vùng ảnh.'); 
-      setIsLoading(false); 
+      setMessage('Vui lòng nhập MSSV và chọn vùng ảnh.');
+      setIsLoading(false);
       return;
     }
     if (!session?.user?.email) {
-      setMessage("[Lỗi] Không thể xác thực email."); 
-      setIsLoading(false); 
+      setMessage("[Lỗi] Không thể xác thực email.");
+      setIsLoading(false);
       return;
     }
-
     const usernameFromEmail = session.user.email.split('@')[0];
     if (!usernameFromEmail.toUpperCase().includes(mssv.toUpperCase())) {
-      setMessage(`[Lỗi] Email bạn đang dùng không khớp với MSSV "${mssv}".`); 
-      setIsLoading(false); 
+      setMessage(`[Lỗi] Email bạn đang dùng không khớp với MSSV "${mssv}".`);
+      setIsLoading(false);
       return;
     }
 
@@ -96,17 +96,11 @@ export default function RegistrationModal({ event, onClose }) {
     
     const formData = new FormData();
     formData.append('photo', croppedImageFile);
-
     try {
-      const response = await fetch('/api/validate-image', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch('/api/validate-image', { method: 'POST', body: formData });
       const result = await response.json();
       setMessage(result.message);
-      if (response.ok) {
-        setIsInfoValid(true);
-      }
+      if (response.ok) { setIsInfoValid(true); }
     } catch (error) {
         setMessage('Lỗi kết nối đến server kiểm tra ảnh.');
     } finally {
@@ -117,25 +111,21 @@ export default function RegistrationModal({ event, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isInfoValid) {
-        setMessage("Thông tin chưa hợp lệ. Vui lòng nhấn 'Cắt và Kiểm tra' trước."); 
+        setMessage("Thông tin chưa hợp lệ. Vui lòng nhấn 'Cắt và Kiểm tra' trước.");
         return;
     }
-    setIsLoading(true); 
+    setIsLoading(true);
     setMessage("");
-
     const fileToUpload = finalCroppedFile || await (await fetch(croppedFileUrl)).blob();
     const formData = new FormData();
     formData.append("mssv", mssv);
     formData.append("photo", fileToUpload, `${mssv.trim()}.jpg`);
     formData.append("eventId", event.id);
-
     try {
       const response = await fetch("/api/register", { method: "POST", body: formData });
       const data = await response.json();
       setMessage(data.message);
-      if (response.ok) { 
-        setTimeout(onClose, 3000); 
-      }
+      if (response.ok) { setTimeout(onClose, 3000); }
     } catch (error) {
       setMessage("Lỗi hệ thống, vui lòng thử lại sau.");
     } finally {
@@ -145,7 +135,7 @@ export default function RegistrationModal({ event, onClose }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-content modal-large-wide">
+      <div className={`modal-content modal-large-wide ${isZoomed ? 'zoomed' : ''}`}>
         {isLoading && <div className="loading-overlay"><div className="loader"></div></div>}
         <form onSubmit={handleSubmit} className="form-box">
             <h2 className="modal-title" style={{textAlign: 'center', marginBottom: '2rem'}}>{event.title}</h2>
@@ -182,12 +172,20 @@ export default function RegistrationModal({ event, onClose }) {
             {imgSrc && (
                 <div className="modal-image-section">
                     <div className="image-cropping-area">
-                        <label>Bước 3: Điều chỉnh ảnh</label>
+                        <div className="cropping-header">
+                           <label>Bước 3: Điều chỉnh ảnh</label>
+                            <button 
+                                type="button" 
+                                className="btn-zoom" 
+                                onClick={() => setIsZoomed(!isZoomed)}
+                            >
+                                {isZoomed ? 'Thu nhỏ' : 'Phóng to'}
+                            </button>
+                        </div>
                         <div className="crop-container-16-9">
                             <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
                                 <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>
                             </ReactCrop>
-                            {/* --- NÚT ĐÃ ĐƯỢC DỜI VÀO TRONG --- */}
                             <button type="button" className="btn-crop-overlay" onClick={handleCropAndValidate} disabled={isLoading}>
                                 4. Cắt và Kiểm tra
                             </button>

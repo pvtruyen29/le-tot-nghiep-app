@@ -730,7 +730,7 @@ a {
 
 /* src/styles/globals.css */
 
-/* --- THAY THẾ TOÀN BỘ ĐOẠN CSS CHO KHU VỰC XỬ LÝ ẢNH --- */
+/* --- THAY THẾ TOÀN BỘ CÁC ĐOẠN CSS DƯỚI ĐÂY --- */
 
 /* Phần dưới: Xử lý ảnh */
 .modal-image-section {
@@ -738,7 +738,7 @@ a {
     padding-top: 2rem;
     display: flex;
     gap: 1.5rem;
-    align-items: flex-start;
+    align-items: stretch; /* Giúp 2 cột cao bằng nhau */
 }
 
 /* Khu vực cắt ảnh (70%) */
@@ -748,32 +748,37 @@ a {
     flex-direction: column;
 }
 
-.image-cropping-area > label {
-    font-weight: 700;
+/* Header của khu vực cắt ảnh */
+.cropping-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.5rem;
-    display: block;
+}
+
+.cropping-header > label {
+    font-weight: 700;
     color: var(--primary-color);
 }
 
-/* src/styles/globals.css */
+.cropping-header-actions {
+    display: flex;
+    gap: 0.5rem; /* Khoảng cách giữa 2 nút */
+}
 
-/* --- THAY THẾ TOÀN BỘ CÁC ĐOẠN CSS DƯỚI ĐÂY --- */
-
-/* Container cho vùng cắt ảnh - Đã sửa lỗi để linh hoạt hơn */
-.crop-container-16-9 {
+/* Container cho vùng cắt ảnh */
+.crop-container {
     width: 100%;
-    height: 600px; /* Dùng height cố định để ổn định layout */
+    height: 580px; /* TĂNG CHIỀU CAO THEO YÊU CẦU */
     background-color: #f0f0f0;
     border-radius: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative;
-    overflow: hidden; 
+    overflow: hidden;
 }
 
-/* Quan trọng: Style cho wrapper của ReactCrop */
-.crop-container-16-9 .ReactCrop__child-wrapper {
+.crop-container .ReactCrop__child-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -781,92 +786,49 @@ a {
     max-height: 100%;
 }
 
-/* Đảm bảo ảnh không bị cắt xén và luôn nằm trọn trong box */
-.crop-container-16-9 img {
+.crop-container img {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain; /* Đây là thuộc tính quan trọng nhất */
+    object-fit: contain;
 }
 
-
-/* --- (Kết thúc phần thay thế) --- */
-
-/* Nút Cắt và Kiểm tra nằm trên ảnh - Xóa bỏ CSS cũ */
-
+/* Nút 4 đã nằm trong header nên không cần style riêng nữa */
 .btn-crop-main {
-    margin-top: 1rem;
-    align-self: center;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 700;
-    
-    /* MÀU MỚI */
-    background-color: #f39c12; /* Màu cam sáng */
-    color: white;
-    
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-/* CSS MỚI CHO NÚT NẰM TRÊN ẢNH */
-.btn-crop-overlay {
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10; /* Đảm bảo nút luôn nổi lên trên */
-    
-    /* Style để nút nổi bật trên nền ảnh */
-    background-color: rgba(0, 86, 145, 0.8);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    padding: 0.5rem 1.25rem;
+    padding: 4px 12px;
+    font-size: 0.8rem;
     border-radius: 20px;
+    background-color: #f39c12;
+    color: white;
+    border: none;
     cursor: pointer;
     font-weight: bold;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    transition: background-color 0.2s;
 }
-
-.btn-crop-overlay:hover {
+.btn-crop-main:hover {
     background-color: #e67e22;
-    transform: translateX(-50%) scale(1.05);
 }
 
-.btn-crop-overlay:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
-
-
-/* Khu vực xem trước (30%) */
+/* Khu vực xem trước (30%) - Sắp xếp lại */
 .image-preview-area {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    justify-content: space-between; /* Đẩy thông báo lên trên, ảnh xuống dưới */
     background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
-    min-height: 250px;
 }
 
-/* --- (Kết thúc phần thay thế) --- */
-
-
-.placeholder-preview {
-    text-align: center;
-    color: #6c757d;
+.preview-container {
+    width: 100%;
 }
 
 .message.message-inline {
     width: 100%;
     text-align: center;
-    margin-top: 1rem;
 }
+
+/* --- (Kết thúc phần thay thế) --- */
 
 /* --- Responsive cho màn hình nhỏ --- */
 @media (max-width: 992px) {

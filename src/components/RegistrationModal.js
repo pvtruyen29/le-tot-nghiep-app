@@ -46,7 +46,7 @@ export default function RegistrationModal({ event, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isInfoValid, setIsInfoValid] = useState(false);
-
+  const [isZoomed, setIsZoomed] = useState(false); // State mới cho chức năng zoom
   const onSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       setCrop(undefined); 
@@ -145,7 +145,7 @@ export default function RegistrationModal({ event, onClose }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-content modal-large-wide">
+      <div className={"modal-content modal-large-wide" ${isZoomed ? 'zoomed' : ''}`}>
         {isLoading && <div className="loading-overlay"><div className="loader"></div></div>}
         <form onSubmit={handleSubmit} className="form-box">
             <h2 className="modal-title" style={{textAlign: 'center', marginBottom: '2rem'}}>{event.title}</h2>
@@ -183,6 +183,15 @@ export default function RegistrationModal({ event, onClose }) {
                 <div className="modal-image-section">
                     <div className="image-cropping-area">
                         <label>Bước 3: Điều chỉnh ảnh</label>
+			{/* Nút Phóng to / Thu nhỏ */}
+                        <button 
+                            type="button" 
+                            className="btn-zoom" 
+                            onClick={() => setIsZoomed(!isZoomed)}
+                        >
+                            {isZoomed ? 'Thu nhỏ' : 'Phóng to'}
+                        </button>
+
                         <div className="crop-container-16-9">
                             <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={3 / 4}>
                                 <img ref={imgRef} src={imgSrc} onLoad={onImageLoad} alt="Vùng cắt ảnh"/>

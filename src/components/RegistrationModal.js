@@ -175,7 +175,6 @@ export default function RegistrationModal({ event, onClose }) {
                         <div className="cropping-header">
                            <label>Bước 3: Điều chỉnh ảnh</label>
                            <div className="cropping-header-actions">
-                               {/* NÚT 4 ĐÃ ĐƯỢC DỜI LÊN ĐÂY */}
                                 <button type="button" className="btn-crop-main" onClick={handleCropAndValidate} disabled={isLoading}>
                                     4. Cắt và Kiểm tra
                                 </button>
@@ -195,14 +194,18 @@ export default function RegistrationModal({ event, onClose }) {
                         </div>
                     </div>
                     <div className="image-preview-area">
-                        {/* THÔNG BÁO ĐÃ ĐƯỢC DỜI LÊN TRÊN */}
-                        {message && <p className="message message-inline">{message}</p>}
+                        {message && 
+                            <p 
+                                className={`message message-inline ${message.includes('Lỗi') ? 'error' : 'success'}`}
+                            >
+                                {message}
+                            </p>
+                        }
                         
-                        {/* ẢNH PREVIEW NẰM Ở DƯỚI */}
                         {croppedFileUrl ? (
                             <div className="preview-container">
                                 <p>Xem trước ảnh đã cắt:</p>
-                                <div className="preview-frame" style={{ aspectRatio: '3 / 4' }}>
+                                <div className="preview-frame">
                                     <img src={croppedFileUrl} alt="Ảnh đã cắt" />
                                 </div>
                             </div>

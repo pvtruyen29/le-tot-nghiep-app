@@ -738,12 +738,12 @@ a {
     padding-top: 2rem;
     display: flex;
     gap: 1.5rem;
-    align-items: stretch; /* Giúp 2 cột cao bằng nhau */
+    align-items: stretch; 
 }
 
-/* Khu vực cắt ảnh (70%) */
+/* Khu vực cắt ảnh (60%) */
 .image-cropping-area {
-    flex: 0 0 70%;
+    flex: 0 0 60%; /* THAY ĐỔI: Giảm chiều rộng */
     display: flex;
     flex-direction: column;
 }
@@ -755,21 +755,19 @@ a {
     align-items: center;
     margin-bottom: 0.5rem;
 }
-
 .cropping-header > label {
     font-weight: 700;
     color: var(--primary-color);
 }
-
 .cropping-header-actions {
     display: flex;
-    gap: 0.5rem; /* Khoảng cách giữa 2 nút */
+    gap: 0.5rem; 
 }
 
 /* Container cho vùng cắt ảnh */
 .crop-container {
     width: 100%;
-    height: 580px; /* TĂNG CHIỀU CAO THEO YÊU CẦU */
+    height: 580px;
     background-color: #f0f0f0;
     border-radius: 8px;
     display: flex;
@@ -777,7 +775,6 @@ a {
     align-items: center;
     overflow: hidden;
 }
-
 .crop-container .ReactCrop__child-wrapper {
     display: flex;
     align-items: center;
@@ -785,35 +782,18 @@ a {
     max-width: 100%;
     max-height: 100%;
 }
-
 .crop-container img {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
 }
 
-/* Nút 4 đã nằm trong header nên không cần style riêng nữa */
-.btn-crop-main {
-    padding: 4px 12px;
-    font-size: 0.8rem;
-    border-radius: 20px;
-    background-color: #f39c12;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s;
-}
-.btn-crop-main:hover {
-    background-color: #e67e22;
-}
-
-/* Khu vực xem trước (30%) - Sắp xếp lại */
+/* Khu vực xem trước (40%) */
 .image-preview-area {
-    flex: 1;
+    flex: 1; /* THAY ĐỔI: Tự động chiếm phần còn lại */
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Đẩy thông báo lên trên, ảnh xuống dưới */
+    justify-content: flex-start; /* Căn từ trên xuống */
     background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
@@ -821,15 +801,71 @@ a {
 
 .preview-container {
     width: 100%;
+    flex-grow: 1; /* Cho phép container này co giãn */
+    display: flex;
+    flex-direction: column;
+}
+.preview-container .preview-frame {
+    width: 100%;
+    flex-grow: 1; /* Cho phép khung ảnh co giãn lấp đầy */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.preview-container .preview-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
 }
 
+/* Thông báo nổi bật */
 .message.message-inline {
     width: 100%;
     text-align: center;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    margin-bottom: 1rem; /* Tạo khoảng cách với ảnh preview */
+}
+.message-inline.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.message-inline.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+
+/* CSS cho trạng thái Phóng to - ĐÃ SỬA LỖI */
+.modal-content.zoomed {
+    width: 95vw;
+    height: 95vh;
+    max-width: 95vw;
+    max-height: 95vh;
+}
+.modal-content.zoomed .modal-top-section,
+.modal-content.zoomed .image-preview-area {
+    display: none;
+}
+.modal-content.zoomed .modal-image-section {
+    height: 100%;
+    padding: 0;
+    border-top: none;
+}
+.modal-content.zoomed .image-cropping-area {
+    flex-basis: 100%;
+    height: 100%;
+}
+.modal-content.zoomed .crop-container {
+    border-radius: 0;
+    height: calc(100% - 40px); /* Chiều cao trừ đi phần header */
 }
 
 /* --- (Kết thúc phần thay thế) --- */
-
 /* --- Responsive cho màn hình nhỏ --- */
 @media (max-width: 992px) {
     .modal-top-section {

@@ -767,12 +767,12 @@ a {
 /* Container cho vùng cắt ảnh */
 .crop-container {
     width: 100%;
-    height: 580px;
+    height: 600px;
     background-color: #f0f0f0;
     border-radius: 8px;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: relative;
     overflow: hidden;
 }
 .crop-container .ReactCrop__child-wrapper {

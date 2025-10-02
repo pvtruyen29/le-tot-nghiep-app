@@ -64,7 +64,8 @@ export default function RegistrationModal({ event, onClose }) {
   const onImageLoad = (e) => {
     imgRef.current = e.currentTarget;
     const { width, height } = e.currentTarget;
-    const newCrop = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, 3 / 4, width, height), width, height);
+    // --- THAY ĐỔI TẠI ĐÂY: Giảm chiều rộng mặc định từ 90% xuống 50% ---
+    const newCrop = centerCrop(makeAspectCrop({ unit: '%', width: 50 }, 3 / 4, width, height), width, height);
     setCrop(newCrop);
   };
 

@@ -19,6 +19,9 @@ export default function AdminDashboard() {
     const [endTime, setEndTime] = useState('');
     const [notes, setNotes] = useState('');
     const [imageFile, setImageFile] = useState(null);
+    
+    // State cho Lịch tốt nghiệp
+    const [scheduleFile, setScheduleFile] = useState(null);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState(null);
@@ -82,20 +85,13 @@ export default function AdminDashboard() {
         e.preventDefault();
         if (!title || !imageFile) return alert('Vui lòng điền tên sự kiện và chọn ảnh.');
         setIsLoading(true);
-        setMessage(''); 
+        setMessage('');
         try {
-            // Upload ảnh lên Storage
             const imageRef = ref(storage, `event_images/${imageFile.name}_${Date.now()}`);
             const snapshot = await uploadBytes(imageRef, imageFile);
             const imageUrl = await getDownloadURL(snapshot.ref);
-            
-            // Lưu dữ liệu vào Firestore
             await addDoc(collection(db, 'events'), {
-                title, 
-                organizer, 
-                location, 
-                notes, 
-                imageUrl,
+                title, organizer, location, notes, imageUrl,
                 eventTime: eventTime ? Timestamp.fromDate(new Date(eventTime)) : null,
                 startTime: startTime ? Timestamp.fromDate(new Date(startTime)) : null,
                 endTime: endTime ? Timestamp.fromDate(new Date(endTime)) : null,
@@ -103,25 +99,16 @@ export default function AdminDashboard() {
                 eligibleCount: 0,
                 registeredCount: 0,
             });
-            
             setMessage('Thêm sự kiện thành công!');
             
-            // Bước 1: Reset giao diện form (để xóa input file)
-            e.target.reset(); 
-            
-            // Bước 2: Dọn dẹp sạch State của React để tránh lỗi rác dữ liệu
-            setTitle('');
-            setOrganizer('');
-            setLocation('');
-            setEventTime('');
-            setStartTime('');
-            setEndTime('');
-            setNotes('');
-            setImageFile(null);
+            // Clear form
+            e.target.reset();
+            setTitle(''); setOrganizer(''); setLocation('');
+            setEventTime(''); setStartTime(''); setEndTime('');
+            setNotes(''); setImageFile(null);
             
             fetchEvents();
         } catch (error) {
-            // In thẳng lỗi ra console và giao diện để bắt bệnh chính xác
             console.error("Firebase Error: ", error);
             setMessage(`Lỗi: ${error.message}`);
         } finally {
@@ -129,22 +116,17 @@ export default function AdminDashboard() {
         }
     };
 
-    // Thêm state cho file lịch tốt nghiệp
-    const [scheduleFile, setScheduleFile] = useState(null);
-
-    // Hàm xử lý upload lịch tốt nghiệp
+    // Hàm cập nhật Lịch tốt nghiệp toàn trường
     const handleUpdateSchedule = async (e) => {
         e.preventDefault();
         if (!scheduleFile) return alert('Vui lòng chọn ảnh lịch.');
         setIsLoading(true);
         setMessage('');
         try {
-            // Upload ảnh lên thư mục 'general' với timestamp để tránh lỗi cache
             const scheduleRef = ref(storage, `general/lich_tot_nghiep_${Date.now()}`);
             const snapshot = await uploadBytes(scheduleRef, scheduleFile);
             const url = await getDownloadURL(snapshot.ref);
             
-            // Lưu đường link ảnh vào Firestore collection 'settings', document 'general'
             await setDoc(doc(db, 'settings', 'general'), { scheduleUrl: url }, { merge: true });
             
             setMessage('Cập nhật Lịch tốt nghiệp toàn trường thành công!');
@@ -274,24 +256,20 @@ export default function AdminDashboard() {
         setMessage('Đang tạo file Excel, vui lòng chờ...');
         try {
             const res = await fetch(`/api/export-excel?eventId=${selectedEventId}`);
-
             if (!res.ok) {
                 const errorData = await res.json();
                 throw new Error(errorData.message || 'Không thể tạo file Excel từ server.');
             }
-
             const blob = await res.blob();
-            
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
             a.download = `danh_sach_dang_ky_${selectedEventId}.xlsx`;
             document.body.appendChild(a);
-a.click();
+            a.click();
             window.URL.revokeObjectURL(url);
             setMessage('Tạo file Excel thành công!');
-
         } catch (error) {
             console.error(error);
             setMessage(`Lỗi: ${error.message}`);
@@ -305,14 +283,34 @@ a.click();
         window.open(`/api/registrations?eventId=${selectedEventId}&action=download_zip`, '_blank');
     };
 
+    // Chuỗi dữ liệu CSV Mẫu (Tích hợp trực tiếp vào link tải)
+    const csvSampleData = "data:text/csv;charset=utf-8," + encodeURIComponent(
+        "MSSV,Dot_TN,DonVi,QĐ,NgayKy,Ho_Ten,Ngay_Sinh,Nu,Lop,Nganh,Chuyen_nganh,Diem_TB,Diem_RL,TCTL,Xep_Loai,Ghi_chu,Dan_Toc,Khoa,Danh_hieu,Email\n" +
+        "B1234567,1/2026,Đại học Cần Thơ,123/QĐ,01/08/2026,Nguyễn Văn A,01/01/2004,0,DI22V7A,Công nghệ thông tin,Kỹ thuật phần mềm,3.5,90,150,Giỏi,,Kinh,CNTT&TT,,b1234567@student.ctu.edu.vn"
+    );
+
     return (
         <div style={{ maxWidth: '1200px', margin: 'auto', padding: '2rem' }}>
             <h1>Bảng điều khiển Admin</h1>
             {message && <p style={{ fontWeight: 'bold', background: '#e0f7fa', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>{message}</p>}
 
+            {/* CẤU HÌNH LỊCH TỐT NGHIỆP */}
+            <details style={{ border: '1px solid #ffc107', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem' }}>Cấu hình chung (Lịch toàn trường)</summary>
+                <form onSubmit={handleUpdateSchedule} style={{ marginTop: '1rem' }}>
+                    <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>
+                        Tải lên hình ảnh "Lịch tốt nghiệp toàn trường" mới để thay thế ảnh mặc định trên trang chủ.
+                    </p>
+                    <input type="file" accept="image/*" onChange={(e) => setScheduleFile(e.target.files[0])} required />
+                    <button type="submit" disabled={isLoading} style={{ marginLeft: '1rem', padding: '8px 16px' }}>
+                        {isLoading ? 'Đang cập nhật...' : 'Cập nhật Lịch'}
+                    </button>
+                </form>
+            </details>
+
+            {/* THÊM SỰ KIỆN MỚI */}
             <details style={{ border: '1px solid #ccc', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem' }}>Thêm sự kiện mới</summary>
-               
                 <form onSubmit={handleAddEvent} style={{ marginTop: '1rem' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
                         <input type="text" placeholder="Tên sự kiện (*)" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -330,19 +328,8 @@ a.click();
                     </div>
                 </form>
             </details>
-            <details style={{ border: '1px solid #ffc107', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
-                <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem' }}>Cấu hình chung (Lịch toàn trường)</summary>
-                <form onSubmit={handleUpdateSchedule} style={{ marginTop: '1rem' }}>
-                    <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>
-                        Tải lên hình ảnh "Lịch tốt nghiệp toàn trường" mới để thay thế ảnh mặc định trên trang chủ.
-                    </p>
-                    <input type="file" accept="image/*" onChange={(e) => setScheduleFile(e.target.files[0])} required />
-                    <button type="submit" disabled={isLoading} style={{ marginLeft: '1rem' }}>
-                        {isLoading ? 'Đang cập nhật...' : 'Cập nhật Lịch'}
-                    </button>
-                </form>
-            </details>
 
+            {/* QUẢN LÝ DỮ LIỆU SỰ KIỆN */}
             <div style={{ border: '1px solid #0070f3', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
                 <h2>Quản lý Sự kiện & Dữ liệu Sinh viên</h2>
                 <div style={{ marginBottom: '1rem' }}>
@@ -354,24 +341,27 @@ a.click();
                 </div>
                 <button onClick={() => handleOpenEditModal(events.find(e => e.id === selectedEventId))} disabled={!selectedEventId}>Sửa sự kiện</button>
                 <button onClick={() => handleDeleteEvent(selectedEventId, events.find(e => e.id === selectedEventId)?.title)} disabled={isLoading || !selectedEventId} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '10px', marginLeft: '1rem' }}>Xóa sự kiện</button>
+                
+                {/* PHẦN TẢI FILE MẪU & UPLOAD */}
                 <form onSubmit={handleUploadStudents} style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-                    <label>Tải lên DS sinh viên đủ điều kiện (CSV UTF-8):</label><br/>
+                    <label style={{ fontWeight: 'bold' }}>Tải lên DS sinh viên đủ điều kiện (Chỉ chấp nhận file CSV UTF-8):</label>
                     
-                    {/* BỔ SUNG LINK TẢI FILE MẪU */}
-                    <a 
-                        href="data:text/csv;charset=utf-8,MSSV,Họ Tên%0AB1234567,Nguyễn Văn A%0AB1234568,Trần Thị B" 
-                        download="Mau_Danh_Sach_Sinh_Vien.csv" 
-                        style={{ display: 'inline-block', marginBottom: '10px', color: '#0070f3', textDecoration: 'underline', fontSize: '0.9rem' }}
-                    >
-                        ⬇ Tải file CSV mẫu
-                    </a>
-                    <br/>
-                    
-                    <input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files[0])} required />
-                    <button type="submit" disabled={isLoading || !selectedEventId} style={{ marginLeft: '1rem' }}>Tải lên</button>
+                    <div style={{ margin: '10px 0', padding: '10px', background: '#f8f9fa', borderLeft: '4px solid #0070f3' }}>
+                        <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem' }}>Tải file mẫu để nhập dữ liệu (hãy lưu lại định dạng <strong>CSV UTF-8</strong> trước khi tải lên):</p>
+                        <a href="/Mau_Danh_Sach_Sinh_Vien.xlsx" download="Mau_Danh_Sach_Sinh_Vien.xlsx" style={{ marginRight: '15px', color: '#0070f3', textDecoration: 'none', fontWeight: 'bold' }}>
+                            📊 Tải File Mẫu (Excel)
+                        </a>
+                        <a href={csvSampleData} download="Mau_Danh_Sach_Sinh_Vien.csv" style={{ color: '#28a745', textDecoration: 'none', fontWeight: 'bold' }}>
+                            📄 Tải File Mẫu (CSV)
+                        </a>
+                    </div>
+
+                    <input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files[0])} required style={{marginTop: '0.5rem'}} />
+                    <button type="submit" disabled={isLoading || !selectedEventId} style={{ marginLeft: '1rem' }}>Tải lên Server</button>
                 </form>
             </div>
             
+            {/* DANH SÁCH SINH VIÊN ĐỦ ĐIỀU KIỆN */}
             <details open style={{ border: '1px solid #28a745', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem' }}>Danh sách Sinh viên Đủ điều kiện ({eligibleStudents.length})</summary>
                 <form onSubmit={handleAddStudent} style={{ marginTop: '1rem' }}>
@@ -394,6 +384,7 @@ a.click();
                 </div>
             </details>
 
+            {/* DANH SÁCH ĐĂNG KÝ */}
             <div>
                 <h2>Danh sách Sinh viên đã Đăng ký ({registrations.length})</h2>
                 <div style={{ marginBottom: '1rem' }}>

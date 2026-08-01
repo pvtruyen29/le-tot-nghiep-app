@@ -283,22 +283,7 @@ a.click();
 
             <details style={{ border: '1px solid #ccc', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem' }}>Thêm sự kiện mới</summary>
-                // <form onSubmit={handleAddEvent} style={{ marginTop: '1rem' }}>
-                //     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                //         <input type="text" placeholder="Tên sự kiện (*)" onChange={(e) => setTitle(e.target.value)} required />
-                //         <input type="text" placeholder="Đơn vị tổ chức" onChange={(e) => setOrganizer(e.target.value)} />
-                //         <input type="text" placeholder="Nơi tổ chức" onChange={(e) => setLocation(e.target.value)} />
-                //         <div><label>Thời gian tổ chức:</label><input type="datetime-local" onChange={(e) => setEventTime(e.target.value)} /></div>
-                //         <div><label>Bắt đầu đăng ký:</label><input type="datetime-local" onChange={(e) => setStartTime(e.target.value)} /></div>
-                //         <div><label>Hạn chót đăng ký:</label><input type="datetime-local" onChange={(e) => setEndTime(e.target.value)} /></div>
-                //     </div>
-                //     <textarea placeholder="Ghi chú, lưu ý..." onChange={(e) => setNotes(e.target.value)} style={{ width: 'calc(100% - 16px)', marginTop: '1rem', minHeight: '80px', padding: '8px' }}></textarea>
-                //     <div style={{ marginTop: '1rem' }}>
-                //         <label>Ảnh minh họa (*): </label>
-                //         <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} required />
-                //         <button type="submit" disabled={isLoading} style={{ float: 'right', padding: '10px 20px' }}>{isLoading ? 'Đang xử lý...' : 'Thêm sự kiện'}</button>
-                //     </div>
-                // </form>
+               
                 <form onSubmit={handleAddEvent} style={{ marginTop: '1rem' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
                         <input type="text" placeholder="Tên sự kiện (*)" value={title} onChange={(e) => setTitle(e.target.value)} required />

@@ -103,7 +103,7 @@ export default async function handler(req, res) {
       
       // Đặt hình ảnh vào đúng ô (cột P)
       worksheet.addImage(imageId, {
-        tl: { col: 15.1, row: rowIndex - 0.9 }, // Vị trí (cột P, hàng hiện tại)
+        tl: { col: 21.1, row: rowIndex - 0.9 }, // Vị trí (cột P, hàng hiện tại)
         ext: { width: 220, height: 60 }
       });
       worksheet.getRow(rowIndex).height = 50;

@@ -1,7 +1,7 @@
 // src/components/AdminDashboard.js
 import { useState, useEffect } from 'react';
 import { db, storage } from '../lib/firebase';
-import { collection, addDoc, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, Timestamp, doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import EditEventModal from './EditEventModal';
 import Barcode from './Barcode';
@@ -123,6 +123,35 @@ export default function AdminDashboard() {
         } catch (error) {
             // In thẳng lỗi ra console và giao diện để bắt bệnh chính xác
             console.error("Firebase Error: ", error);
+            setMessage(`Lỗi: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Thêm state cho file lịch tốt nghiệp
+    const [scheduleFile, setScheduleFile] = useState(null);
+
+    // Hàm xử lý upload lịch tốt nghiệp
+    const handleUpdateSchedule = async (e) => {
+        e.preventDefault();
+        if (!scheduleFile) return alert('Vui lòng chọn ảnh lịch.');
+        setIsLoading(true);
+        setMessage('');
+        try {
+            // Upload ảnh lên thư mục 'general' với timestamp để tránh lỗi cache
+            const scheduleRef = ref(storage, `general/lich_tot_nghiep_${Date.now()}`);
+            const snapshot = await uploadBytes(scheduleRef, scheduleFile);
+            const url = await getDownloadURL(snapshot.ref);
+            
+            // Lưu đường link ảnh vào Firestore collection 'settings', document 'general'
+            await setDoc(doc(db, 'settings', 'general'), { scheduleUrl: url }, { merge: true });
+            
+            setMessage('Cập nhật Lịch tốt nghiệp toàn trường thành công!');
+            e.target.reset();
+            setScheduleFile(null);
+        } catch (error) {
+            console.error("Lỗi cập nhật lịch:", error);
             setMessage(`Lỗi: ${error.message}`);
         } finally {
             setIsLoading(false);
@@ -301,6 +330,18 @@ a.click();
                     </div>
                 </form>
             </details>
+            <details style={{ border: '1px solid #ffc107', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '1.2rem' }}>Cấu hình chung (Lịch toàn trường)</summary>
+                <form onSubmit={handleUpdateSchedule} style={{ marginTop: '1rem' }}>
+                    <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>
+                        Tải lên hình ảnh "Lịch tốt nghiệp toàn trường" mới để thay thế ảnh mặc định trên trang chủ.
+                    </p>
+                    <input type="file" accept="image/*" onChange={(e) => setScheduleFile(e.target.files[0])} required />
+                    <button type="submit" disabled={isLoading} style={{ marginLeft: '1rem' }}>
+                        {isLoading ? 'Đang cập nhật...' : 'Cập nhật Lịch'}
+                    </button>
+                </form>
+            </details>
 
             <div style={{ border: '1px solid #0070f3', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
                 <h2>Quản lý Sự kiện & Dữ liệu Sinh viên</h2>
@@ -315,7 +356,18 @@ a.click();
                 <button onClick={() => handleDeleteEvent(selectedEventId, events.find(e => e.id === selectedEventId)?.title)} disabled={isLoading || !selectedEventId} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '10px', marginLeft: '1rem' }}>Xóa sự kiện</button>
                 <form onSubmit={handleUploadStudents} style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
                     <label>Tải lên DS sinh viên đủ điều kiện (CSV UTF-8):</label><br/>
-                    <input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files[0])} required style={{marginTop: '0.5rem'}} />
+                    
+                    {/* BỔ SUNG LINK TẢI FILE MẪU */}
+                    <a 
+                        href="data:text/csv;charset=utf-8,MSSV,Họ Tên%0AB1234567,Nguyễn Văn A%0AB1234568,Trần Thị B" 
+                        download="Mau_Danh_Sach_Sinh_Vien.csv" 
+                        style={{ display: 'inline-block', marginBottom: '10px', color: '#0070f3', textDecoration: 'underline', fontSize: '0.9rem' }}
+                    >
+                        ⬇ Tải file CSV mẫu
+                    </a>
+                    <br/>
+                    
+                    <input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files[0])} required />
                     <button type="submit" disabled={isLoading || !selectedEventId} style={{ marginLeft: '1rem' }}>Tải lên</button>
                 </form>
             </div>

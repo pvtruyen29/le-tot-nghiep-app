@@ -84,11 +84,18 @@ export default function AdminDashboard() {
         setIsLoading(true);
         setMessage('');
         try {
+            // Upload ảnh lên Storage
             const imageRef = ref(storage, `event_images/${imageFile.name}_${Date.now()}`);
             const snapshot = await uploadBytes(imageRef, imageFile);
             const imageUrl = await getDownloadURL(snapshot.ref);
+            
+            // Lưu dữ liệu vào Firestore
             await addDoc(collection(db, 'events'), {
-                title, organizer, location, notes, imageUrl,
+                title, 
+                organizer, 
+                location, 
+                notes, 
+                imageUrl,
                 eventTime: eventTime ? Timestamp.fromDate(new Date(eventTime)) : null,
                 startTime: startTime ? Timestamp.fromDate(new Date(startTime)) : null,
                 endTime: endTime ? Timestamp.fromDate(new Date(endTime)) : null,
@@ -96,11 +103,27 @@ export default function AdminDashboard() {
                 eligibleCount: 0,
                 registeredCount: 0,
             });
+            
             setMessage('Thêm sự kiện thành công!');
-            e.target.reset();
+            
+            // Bước 1: Reset giao diện form (để xóa input file)
+            e.target.reset(); 
+            
+            // Bước 2: Dọn dẹp sạch State của React để tránh lỗi rác dữ liệu
+            setTitle('');
+            setOrganizer('');
+            setLocation('');
+            setEventTime('');
+            setStartTime('');
+            setEndTime('');
+            setNotes('');
+            setImageFile(null);
+            
             fetchEvents();
         } catch (error) {
-            setMessage('Lỗi: Không thể thêm sự kiện.');
+            // In thẳng lỗi ra console và giao diện để bắt bệnh chính xác
+            console.error("Firebase Error: ", error);
+            setMessage(`Lỗi: ${error.message}`);
         } finally {
             setIsLoading(false);
         }

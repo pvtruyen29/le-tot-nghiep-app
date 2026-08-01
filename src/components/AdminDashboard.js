@@ -82,7 +82,7 @@ export default function AdminDashboard() {
         e.preventDefault();
         if (!title || !imageFile) return alert('Vui lòng điền tên sự kiện và chọn ảnh.');
         setIsLoading(true);
-        setMessage('');
+        setMessage(''); 
         try {
             // Upload ảnh lên Storage
             const imageRef = ref(storage, `event_images/${imageFile.name}_${Date.now()}`);

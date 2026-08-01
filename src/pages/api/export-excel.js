@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       { header: 'QD', key: 'qd', width: 30 },
       { header: 'TCTL', key: 'tctl', width: 30 },
       { header: 'Ghi_chu', key: 'ghiChu', width: 30 },
-      { header: 'Dan_Toc', key: 'dantoc', width: 30 },
+      { header: 'Dan_Toc', key: 'danToc', width: 30 },
       { header: 'Khoa', key: 'khoa', width: 30 },
       { header: 'Email', key: 'email', width: 30 },
       { header: 'Link_Image', key: 'photoURL', width: 40 },
